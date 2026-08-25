@@ -1,0 +1,500 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>BatXon: Gotham Realms - 60 Levels</title>
+    
+    <!-- PyScript CDN -->
+    <link rel="stylesheet" href="https://pyscript.net/releases/2024.1.1/core.css" />
+    <script type="module" src="https://pyscript.net/releases/2024.1.1/core.js"></script>
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            background: #0a0a0a;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            font-family: 'Arial Black', sans-serif;
+        }
+        .game-wrapper {
+            background: linear-gradient(145deg, #1a1a2e, #16213e);
+            padding: 30px;
+            border-radius: 20px;
+            box-shadow: 0 0 50px rgba(255, 215, 0, 0.2), inset 0 0 30px rgba(0, 0, 0, 0.8);
+            border: 2px solid #f0c040;
+        }
+        canvas {
+            display: block;
+            margin: 0 auto;
+            background: #1a1a2e;
+            border-radius: 10px;
+            box-shadow: inset 0 0 30px #000;
+            cursor: pointer;
+            width: 600px;
+            height: 600px;
+        }
+        .info-panel {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin: 15px 5px 0 5px;
+            color: #f0c040;
+            font-size: 18px;
+            text-shadow: 0 0 10px #f0c040;
+            letter-spacing: 1px;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        .info-panel span {
+            background: rgba(0, 0, 0, 0.6);
+            padding: 8px 20px;
+            border-radius: 30px;
+            border: 1px solid #f0c040;
+        }
+        .bat-logo {
+            color: #f0c040;
+            font-size: 28px;
+            text-shadow: 0 0 20px #f0c040;
+        }
+        #status-msg {
+            color: #ff4444;
+            font-size: 22px;
+            min-height: 40px;
+            text-align: center;
+            margin-top: 10px;
+            text-shadow: 0 0 20px #ff0000;
+        }
+        button {
+            background: #f0c040;
+            color: #0a0a0a;
+            border: none;
+            padding: 10px 30px;
+            border-radius: 30px;
+            font-weight: bold;
+            font-size: 18px;
+            cursor: pointer;
+            transition: 0.3s;
+            box-shadow: 0 0 20px rgba(240, 192, 64, 0.3);
+        }
+        button:hover {
+            transform: scale(1.05);
+            box-shadow: 0 0 40px rgba(240, 192, 64, 0.6);
+        }
+        .level-progress {
+            color: #aaa;
+            font-size: 14px;
+            text-align: center;
+            margin-top: 8px;
+        }
+        @media (max-width: 650px) {
+            canvas { width: 100%; height: auto; aspect-ratio: 1/1; }
+            .game-wrapper { padding: 15px; }
+            .info-panel { font-size: 14px; }
+            .info-panel span { padding: 5px 12px; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="game-wrapper">
+        <div class="bat-logo" style="text-align:center; margin-bottom:10px;">
+            🦇 BATXON: GOTHAM REALMS 🦇
+        </div>
+        
+        <canvas id="gameCanvas" width="600" height="600"></canvas>
+        
+        <div class="info-panel">
+            <span>🏆 Level <span id="levelDisplay">1</span>/60</span>
+            <span>🦇 Batman</span>
+            <span id="percentDisplay">0%</span>
+            <span>🤡 <span id="goonCount">3</span> Goons</span>
+        </div>
+        
+        <div id="status-msg">⚡ Draw walls to trap the Joker Goons!</div>
+        
+        <div style="display:flex; justify-content:center; gap:20px; margin-top:15px; flex-wrap:wrap;">
+            <button id="restartBtn">🔄 Restart</button>
+            <button id="levelSelectBtn">📋 Jump to Level</button>
+        </div>
+        
+        <div class="level-progress" id="levelProgress">Level 1 of 60</div>
+    </div>
+
+    <!-- ============================================================ -->
+    <!-- P Y T H O N   C O D E   (60 Levels!)                          -->
+    <!-- ============================================================ -->
+    <py-script>
+        from js import document, window, console
+        from pyodide.ffi import create_proxy
+        import math
+        import random
+        import asyncio
+        
+        # ---------- CONSTANTS ----------
+        GRID_SIZE = 20
+        CELL_SIZE = 600 // GRID_SIZE
+        
+        # States
+        EMPTY = 0
+        WALL = 1
+        CAPTURED = 2
+        GOON = 3
+        
+        # ---------- GAME STATE ----------
+        grid = []
+        player_x = 10
+        player_y = 10
+        prev_x = 10
+        prev_y = 10
+        goons = []
+        game_over = False
+        level = 1
+        max_levels = 60
+        goon_speed = 500  # milliseconds between goon moves (starts at 500ms)
+        goon_count = 3
+        score = 0
+        game_loop_task = None
+        
+        # ---------- CANVAS SETUP ----------
+        canvas = document.getElementById("gameCanvas")
+        ctx = canvas.getContext("2d")
+        
+        # ---------- LEVEL CONFIGURATION ----------
+        def get_level_config(lvl):
+            """Returns (goon_count, goon_speed_ms) for each level 1-60"""
+            # Level 1: 3 goons, 500ms speed
+            # Level 60: 15 goons, 150ms speed (super fast!)
+            
+            # Goons: start at 3, add 1 every 4 levels, cap at 15
+            goons = min(3 + (lvl - 1) // 4, 15)
+            
+            # Speed: start at 500ms, decrease by 5ms per level, floor at 150ms
+            speed = max(150, 500 - (lvl - 1) * 5)
+            
+            return goons, speed
+        
+        # ---------- INIT / RESET ----------
+        def init_game():
+            global grid, player_x, player_y, prev_x, prev_y, goons, game_over, level, goon_speed, goon_count, score, game_loop_task
+            
+            # Cancel existing game loop
+            if game_loop_task:
+                game_loop_task.cancel()
+            
+            game_over = False
+            player_x = 10
+            player_y = 10
+            prev_x = 10
+            prev_y = 10
+            level = 1
+            score = 0
+            
+            # Get level config
+            goon_count, goon_speed = get_level_config(level)
+            
+            # Fill grid
+            grid = [[EMPTY for _ in range(GRID_SIZE)] for _ in range(GRID_SIZE)]
+            grid[player_y][player_x] = CAPTURED
+            
+            # Spawn goons
+            spawn_goons()
+            
+            update_display()
+            draw()
+            document.getElementById("status-msg").innerHTML = "🦇 Trap the Joker Goons! Level 1"
+            document.getElementById("levelProgress").innerHTML = f"Level 1 of {max_levels}"
+            
+            # Start game loop
+            start_game_loop()
+        
+        def spawn_goons():
+            global goons
+            goons = []
+            for _ in range(goon_count):
+                attempts = 0
+                while attempts < 100:
+                    gx = random.randint(0, GRID_SIZE-1)
+                    gy = random.randint(0, GRID_SIZE-1)
+                    if grid[gy][gx] == EMPTY and (gx != player_x or gy != player_y):
+                        grid[gy][gx] = GOON
+                        goons.append([gx, gy])
+                        break
+                    attempts += 1
+        
+        def start_next_level():
+            global level, goon_count, goon_speed, grid, goons, player_x, player_y, prev_x, prev_y, game_over, game_loop_task
+            
+            if level >= max_levels:
+                document.getElementById("status-msg").innerHTML = "🏆 YOU BEAT ALL 60 LEVELS! BATMAN WINS! 🏆"
+                game_over = True
+                draw()
+                return
+            
+            # Cancel current loop
+            if game_loop_task:
+                game_loop_task.cancel()
+            
+            level += 1
+            game_over = False
+            player_x = 10
+            player_y = 10
+            prev_x = 10
+            prev_y = 10
+            
+            # Get new level config
+            goon_count, goon_speed = get_level_config(level)
+            
+            # Reset grid
+            grid = [[EMPTY for _ in range(GRID_SIZE)] for _ in range(GRID_SIZE)]
+            grid[player_y][player_x] = CAPTURED
+            
+            # Spawn goons for new level
+            spawn_goons()
+            
+            update_display()
+            draw()
+            document.getElementById("status-msg").innerHTML = f"🦇 Level {level} - {goon_count} Joker Goons!"
+            document.getElementById("levelProgress").innerHTML = f"Level {level} of {max_levels}"
+            
+            # Start new game loop with updated speed
+            start_game_loop()
+        
+        # ---------- FLOOD FILL ----------
+        def flood_fill(start_x, start_y):
+            if grid[start_y][start_x] == WALL:
+                return
+            
+            queue = [(start_x, start_y)]
+            visited = set()
+            visited.add((start_x, start_y))
+            
+            while queue:
+                x, y = queue.pop(0)
+                if grid[y][x] == EMPTY or grid[y][x] == CAPTURED:
+                    grid[y][x] = CAPTURED
+                    
+                    for dx, dy in [(0,1),(0,-1),(1,0),(-1,0)]:
+                        nx, ny = x + dx, y + dy
+                        if 0 <= nx < GRID_SIZE and 0 <= ny < GRID_SIZE:
+                            if (nx, ny) not in visited and grid[ny][nx] != WALL and grid[ny][nx] != GOON:
+                                visited.add((nx, ny))
+                                queue.append((nx, ny))
+        
+        # ---------- PLAYER MOVEMENT ----------
+        def move_player(dx, dy):
+            global player_x, player_y, prev_x, prev_y, game_over
+            
+            if game_over:
+                return
+            
+            new_x = player_x + dx
+            new_y = player_y + dy
+            
+            if new_x < 0 or new_x >= GRID_SIZE or new_y < 0 or new_y >= GRID_SIZE:
+                return
+            
+            if grid[new_y][new_x] == WALL or grid[new_y][new_x] == GOON:
+                return
+            
+            prev_x, prev_y = player_x, player_y
+            player_x, player_y = new_x, new_y
+            
+            if grid[player_y][player_x] == EMPTY:
+                draw_wall_between(prev_x, prev_y, player_x, player_y)
+            
+            grid[player_y][player_x] = CAPTURED
+            flood_fill(player_x, player_y)
+            
+            # Check win condition
+            captured_count = sum(row.count(CAPTURED) for row in grid)
+            total_cells = GRID_SIZE * GRID_SIZE
+            percent = (captured_count / total_cells) * 100
+            
+            if percent >= 80:
+                game_over = True
+                document.getElementById("status-msg").innerHTML = f"✅ Level {level} COMPLETE! 🦇"
+                # Auto-advance after 1.5 seconds
+                asyncio.create_task(delayed_next_level())
+            
+            update_display()
+            draw()
+        
+        async def delayed_next_level():
+            await asyncio.sleep(1.5)
+            start_next_level()
+        
+        def draw_wall_between(x1, y1, x2, y2):
+            if x1 == x2:
+                y_min = min(y1, y2)
+                y_max = max(y1, y2)
+                for y in range(y_min, y_max + 1):
+                    if grid[y][x1] == EMPTY:
+                        grid[y][x1] = WALL
+            elif y1 == y2:
+                x_min = min(x1, x2)
+                x_max = max(x1, x2)
+                for x in range(x_min, x_max + 1):
+                    if grid[y1][x] == EMPTY:
+                        grid[y1][x] = WALL
+        
+        # ---------- GOON AI ----------
+        def move_goons():
+            if game_over:
+                return
+            
+            # Move each goon
+            for goon in goons:
+                gx, gy = goon
+                directions = [(0,1),(0,-1),(1,0),(-1,0)]
+                random.shuffle(directions)
+                
+                for dx, dy in directions:
+                    nx, ny = gx + dx, gy + dy
+                    if 0 <= nx < GRID_SIZE and 0 <= ny < GRID_SIZE:
+                        if grid[ny][nx] != WALL and grid[ny][nx] != CAPTURED and grid[ny][nx] != GOON:
+                            grid[gy][gx] = EMPTY
+                            goon[0], goon[1] = nx, ny
+                            grid[ny][nx] = GOON
+                            break
+            
+            # Collision check
+            for gx, gy in goons:
+                if gx == player_x and gy == player_y:
+                    game_over = True
+                    document.getElementById("status-msg").innerHTML = "🤡 JOKER WINS! Game Over 🤡"
+                    draw()
+                    return
+            
+            draw()
+        
+        # ---------- DRAWING ----------
+        def draw():
+            ctx.clearRect(0, 0, 600, 600)
+            
+            # Draw grid
+            for row in range(GRID_SIZE):
+                for col in range(GRID_SIZE):
+                    x = col * CELL_SIZE
+                    y = row * CELL_SIZE
+                    state = grid[row][col]
+                    
+                    if state == EMPTY:
+                        ctx.fillStyle = "#1a1a2e"
+                    elif state == WALL:
+                        ctx.fillStyle = "#4a4a6a"
+                    elif state == CAPTURED:
+                        ctx.fillStyle = "#2a2a4a"
+                    elif state == GOON:
+                        ctx.fillStyle = "#6b0020"
+                    
+                    ctx.fillRect(x, y, CELL_SIZE-1, CELL_SIZE-1)
+                    ctx.strokeStyle = "#333355"
+                    ctx.lineWidth = 0.5
+                    ctx.strokeRect(x, y, CELL_SIZE, CELL_SIZE)
+            
+            # Draw Batman
+            bx = player_x * CELL_SIZE + CELL_SIZE//2
+            by = player_y * CELL_SIZE + CELL_SIZE//2
+            ctx.beginPath()
+            ctx.arc(bx, by, CELL_SIZE//2 - 2, 0, 2 * math.pi)
+            ctx.fillStyle = "#f0c040"
+            ctx.shadowColor = "#f0c040"
+            ctx.shadowBlur = 15
+            ctx.fill()
+            ctx.shadowBlur = 0
+            ctx.fillStyle = "#0a0a0a"
+            ctx.font = "22px Arial"
+            ctx.textAlign = "center"
+            ctx.textBaseline = "middle"
+            ctx.fillText("🦇", bx, by+2)
+            
+            # Draw Joker Goons
+            for gx, gy in goons:
+                gx_px = gx * CELL_SIZE + CELL_SIZE//2
+                gy_px = gy * CELL_SIZE + CELL_SIZE//2
+                ctx.beginPath()
+                ctx.arc(gx_px, gy_px, CELL_SIZE//2 - 2, 0, 2 * math.pi)
+                ctx.fillStyle = "#8b008b"
+                ctx.shadowColor = "#ff00ff"
+                ctx.shadowBlur = 10
+                ctx.fill()
+                ctx.shadowBlur = 0
+                ctx.fillStyle = "#ffffff"
+                ctx.font = "20px Arial"
+                ctx.textAlign = "center"
+                ctx.textBaseline = "middle"
+                ctx.fillText("🎭", gx_px, gy_px+1)
+        
+        # ---------- UI UPDATE ----------
+        def update_display():
+            captured_count = sum(row.count(CAPTURED) for row in grid)
+            total_cells = GRID_SIZE * GRID_SIZE
+            percent = int((captured_count / total_cells) * 100)
+            document.getElementById("percentDisplay").innerHTML = f"{percent}%"
+            document.getElementById("levelDisplay").innerHTML = str(level)
+            document.getElementById("goonCount").innerHTML = str(goon_count)
+        
+        # ---------- GAME LOOP ----------
+        def start_game_loop():
+            global game_loop_task
+            async def loop():
+                while not game_over:
+                    await asyncio.sleep(goon_speed / 1000)  # Convert ms to seconds
+                    if not game_over:
+                        move_goons()
+            game_loop_task = asyncio.create_task(loop())
+        
+        # ---------- KEYBOARD CONTROLS ----------
+        def on_keydown(event):
+            key = event.key
+            if key == "ArrowUp": move_player(0, -1)
+            elif key == "ArrowDown": move_player(0, 1)
+            elif key == "ArrowLeft": move_player(-1, 0)
+            elif key == "ArrowRight": move_player(1, 0)
+            elif key == "r" or key == "R": init_game()
+        
+        # ---------- RESTART ----------
+        def restart_game(event):
+            init_game()
+        
+        # ---------- LEVEL JUMP (For testing) ----------
+        def jump_to_level(event):
+            target = window.prompt(f"Jump to which level? (1-{max_levels})", "1")
+            if target:
+                try:
+                    target_level = int(target)
+                    if 1 <= target_level <= max_levels:
+                        global level, game_loop_task
+                        if game_loop_task:
+                            game_loop_task.cancel()
+                        level = target_level - 1  # Will increment in start_next_level
+                        start_next_level()
+                    else:
+                        window.alert(f"Enter a number between 1 and {max_levels}")
+                except:
+                    window.alert("Please enter a valid number")
+        
+        # ---------- SETUP ----------
+        def setup():
+            key_proxy = create_proxy(on_keydown)
+            document.addEventListener("keydown", key_proxy)
+            
+            btn_restart = document.getElementById("restartBtn")
+            btn_restart.addEventListener("click", create_proxy(restart_game))
+            
+            btn_level = document.getElementById("levelSelectBtn")
+            btn_level.addEventListener("click", create_proxy(jump_to_level))
+            
+            init_game()
+        
+        setup()
+    </py-script>
+</body>
+</html>
