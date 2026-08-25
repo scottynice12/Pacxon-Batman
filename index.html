@@ -126,12 +126,12 @@
         .controls button.music-btn:hover {
             box-shadow: 0 0 30px rgba(139, 0, 139, 0.5);
         }
-        .controls button.powerup-btn {
-            background: #ff00ff;
+        .controls button.pause-btn {
+            background: #ff8800;
             color: white;
         }
-        .controls button.powerup-btn:hover {
-            box-shadow: 0 0 30px rgba(255, 0, 255, 0.5);
+        .controls button.pause-btn:hover {
+            box-shadow: 0 0 30px rgba(255, 136, 0, 0.5);
         }
         .touch-controls {
             display: none;
@@ -230,14 +230,6 @@
             background: #444466;
             box-shadow: 0 0 50px rgba(240, 192, 64, 0.2);
         }
-        #mainMenu .menu-btn.powerup-btn {
-            background: #ff00ff;
-            color: white;
-            border: 2px solid #ff00ff;
-        }
-        #mainMenu .menu-btn.powerup-btn:hover {
-            box-shadow: 0 0 50px rgba(255, 0, 255, 0.5);
-        }
         #mainMenu .controls-info {
             color: #666;
             font-size: 13px;
@@ -253,6 +245,71 @@
         }
         #mainMenu .controls-info .powerup-text {
             color: #ff00ff;
+        }
+        
+        /* PAUSE OVERLAY */
+        #pauseOverlay {
+            display: none;
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(10, 10, 30, 0.92);
+            border-radius: 20px;
+            z-index: 150;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 30px;
+        }
+        #pauseOverlay.active {
+            display: flex;
+        }
+        #pauseOverlay .pause-icon {
+            font-size: 80px;
+            color: #f0c040;
+            text-shadow: 0 0 40px #f0c040;
+            margin-bottom: 15px;
+        }
+        #pauseOverlay h2 {
+            color: #f0c040;
+            font-size: 28px;
+            margin-bottom: 20px;
+            text-shadow: 0 0 20px #f0c040;
+        }
+        #pauseOverlay .pause-buttons {
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+        #pauseOverlay .pause-btn {
+            padding: 14px 40px;
+            border-radius: 50px;
+            font-size: 18px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: 0.3s;
+            font-family: 'Arial Black', sans-serif;
+            border: none;
+            min-width: 160px;
+        }
+        #pauseOverlay .pause-btn.continue {
+            background: #44ff88;
+            color: #0a0a0a;
+        }
+        #pauseOverlay .pause-btn.continue:hover {
+            transform: scale(1.08);
+            box-shadow: 0 0 40px rgba(68, 255, 136, 0.5);
+        }
+        #pauseOverlay .pause-btn.menu {
+            background: #ff4444;
+            color: white;
+        }
+        #pauseOverlay .pause-btn.menu:hover {
+            transform: scale(1.08);
+            box-shadow: 0 0 40px rgba(255, 68, 68, 0.5);
         }
         
         /* LEVEL SELECT MODAL */
@@ -355,6 +412,9 @@
             .header { font-size: 16px; }
             .touch-controls { display: grid; }
             #levelSelect .level-grid { grid-template-columns: repeat(5, 1fr); }
+            #pauseOverlay .pause-icon { font-size: 60px; }
+            #pauseOverlay h2 { font-size: 22px; }
+            #pauseOverlay .pause-btn { padding: 12px 25px; font-size: 15px; min-width: 120px; }
         }
         @media (pointer: coarse) {
             .touch-controls { display: grid; }
@@ -394,6 +454,16 @@
         <button class="close-btn" onclick="closeLevelSelect()">✕ Close</button>
     </div>
 
+    <!-- PAUSE OVERLAY -->
+    <div id="pauseOverlay">
+        <div class="pause-icon">⏸️</div>
+        <h2>PAUSED</h2>
+        <div class="pause-buttons">
+            <button class="pause-btn continue" onclick="resumeGame()">▶ Continue</button>
+            <button class="pause-btn menu" onclick="returnToMenu()">🏠 Return to Menu</button>
+        </div>
+    </div>
+
     <div class="header">🦇 BATXON: GOTHAM REALMS 🦇</div>
     
     <canvas id="gameCanvas" width="600" height="600"></canvas>
@@ -409,6 +479,7 @@
     
     <div class="controls">
         <button onclick="showLevelSelect()">📋 Levels</button>
+        <button class="pause-btn" onclick="togglePause()">⏸️ Pause</button>
         <button class="music-btn" id="musicBtn" onclick="toggleMusic()">🔇 Music Off</button>
     </div>
     
@@ -428,7 +499,7 @@
 <script>
     // ============================================================
     //  BATXON: GOTHAM REALMS - FINAL VERSION
-    //  Level Select (unlocked only), Power-ups, Corner Bonus
+    //  Pause, Faster Gameplay, Level Select, Power-ups
     // ============================================================
 
     // --- Music System ---
@@ -464,21 +535,21 @@
     function playBatmanTheme() {
         if (!musicPlaying) return;
         const notes = [
-            [440, 0.12], [554, 0.12], [659, 0.12], [880, 0.18],
-            [784, 0.12], [698, 0.12], [659, 0.12], [587, 0.18],
-            [523, 0.12], [659, 0.12], [784, 0.12], [880, 0.18],
-            [784, 0.12], [698, 0.12], [659, 0.12], [587, 0.25],
-            [440, 0.12], [554, 0.12], [659, 0.12], [880, 0.18],
-            [784, 0.12], [698, 0.12], [659, 0.12], [587, 0.18],
-            [523, 0.12], [659, 0.12], [784, 0.12], [988, 0.18],
-            [880, 0.12], [784, 0.12], [698, 0.12], [659, 0.3]
+            [440, 0.10], [554, 0.10], [659, 0.10], [880, 0.15],
+            [784, 0.10], [698, 0.10], [659, 0.10], [587, 0.15],
+            [523, 0.10], [659, 0.10], [784, 0.10], [880, 0.15],
+            [784, 0.10], [698, 0.10], [659, 0.10], [587, 0.20],
+            [440, 0.10], [554, 0.10], [659, 0.10], [880, 0.15],
+            [784, 0.10], [698, 0.10], [659, 0.10], [587, 0.15],
+            [523, 0.10], [659, 0.10], [784, 0.10], [988, 0.15],
+            [880, 0.10], [784, 0.10], [698, 0.10], [659, 0.25]
         ];
         let time = 0;
         for (const [freq, dur] of notes) {
             setTimeout(() => {
                 if (musicPlaying) playNote(freq, dur, 'square', 0.10);
             }, time * 1000);
-            time += dur + 0.04;
+            time += dur + 0.03;
         }
         if (musicPlaying) {
             musicTimeout = setTimeout(playBatmanTheme, (time + 0.5) * 1000);
@@ -524,7 +595,7 @@
     let level = 1;
     let maxUnlockedLevel = 1;
     let goonCount = 3;
-    let goonSpeed = 500;
+    let goonSpeed = 200; // FASTER - was 500
     let lives = 3;
     let gameOver = false;
     let levelDone = false;
@@ -537,6 +608,7 @@
     let cornerBonusActive = false;
     let powerupActive = false;
     let powerupTimer = null;
+    let isPaused = false;
 
     // --- DOM Refs ---
     const levelDisplay = document.getElementById('levelDisplay');
@@ -548,6 +620,40 @@
     const levelSelect = document.getElementById('levelSelect');
     const levelGrid = document.getElementById('levelGrid');
     const unlockCount = document.getElementById('unlockCount');
+    const pauseOverlay = document.getElementById('pauseOverlay');
+
+    // ============================================================
+    //  PAUSE SYSTEM
+    // ============================================================
+    function togglePause() {
+        if (gameOver || levelDone || !gameStarted) return;
+        isPaused = !isPaused;
+        if (isPaused) {
+            pauseOverlay.classList.add('active');
+            stopLoops();
+            document.querySelector('.pause-btn').textContent = '▶️ Resume';
+        } else {
+            pauseOverlay.classList.remove('active');
+            document.querySelector('.pause-btn').textContent = '⏸️ Pause';
+            startLoops();
+        }
+    }
+
+    function resumeGame() {
+        if (isPaused) {
+            togglePause();
+        }
+    }
+
+    function returnToMenu() {
+        isPaused = false;
+        pauseOverlay.classList.remove('active');
+        document.querySelector('.pause-btn').textContent = '⏸️ Pause';
+        stopLoops();
+        gameStarted = false;
+        mainMenu.classList.remove('hidden');
+        draw();
+    }
 
     // ============================================================
     //  MAIN MENU
@@ -555,7 +661,10 @@
     function startGame() {
         mainMenu.classList.add('hidden');
         levelSelect.classList.remove('active');
+        pauseOverlay.classList.remove('active');
         gameStarted = true;
+        isPaused = false;
+        document.querySelector('.pause-btn').textContent = '⏸️ Pause';
         initGame();
         if (!musicPlaying) {
             toggleMusic();
@@ -566,6 +675,7 @@
     //  LEVEL SELECT
     // ============================================================
     function showLevelSelect() {
+        if (isPaused) return;
         levelSelect.classList.add('active');
         renderLevelGrid();
     }
@@ -604,12 +714,13 @@
     }
 
     // ============================================================
-    //  LEVEL CONFIG
+    //  LEVEL CONFIG - FASTER GOONS
     // ============================================================
     function getConfig(lvl) {
         const baseGoons = 3 + Math.floor(Math.random() * 3);
         const g = Math.min(baseGoons + Math.floor((lvl - 1) / 10), 8);
-        const s = Math.max(150, 500 - (lvl - 1) * 5);
+        // Goons start at 200ms, get faster to 80ms
+        const s = Math.max(80, 200 - (lvl - 1) * 2);
         return { goons: g, speed: s };
     }
 
@@ -618,7 +729,6 @@
     // ============================================================
     function spawnPowerups() {
         powerups = [];
-        // Spawn 2-4 powerups per level
         const count = 2 + Math.floor(Math.random() * 3);
         for (let i = 0; i < count; i++) {
             let attempts = 0;
@@ -626,11 +736,9 @@
             while (attempts < 200 && !placed) {
                 const x = Math.floor(Math.random() * GRID);
                 const y = Math.floor(Math.random() * GRID);
-                // Don't spawn on player, goons, walls, or other powerups
                 if (grid[y][x] === EMPTY && 
                     !(x === player.x && y === player.y) &&
                     !powerups.some(p => p.x === x && p.y === y)) {
-                    // Check not near player start
                     const dist = Math.abs(x - 10) + Math.abs(y - 10);
                     if (dist > 5) {
                         grid[y][x] = POWERUP;
@@ -644,19 +752,16 @@
     }
 
     function collectPowerup(x, y) {
-        // Remove powerup from grid
         const index = powerups.findIndex(p => p.x === x && p.y === y);
         if (index !== -1) {
             powerups.splice(index, 1);
             grid[y][x] = CAPTURED;
             
-            // Power-up effect: fill a large area!
             powerupActive = true;
             statusEl.textContent = '⚡ POWER-UP! Filling a large area! ⚡';
             statusEl.style.color = '#ff00ff';
             statusEl.style.textShadow = '0 0 30px #ff00ff';
             
-            // Fill a 5x5 area around the powerup
             let filled = 0;
             for (let dy = -3; dy <= 3; dy++) {
                 for (let dx = -3; dx <= 3; dx++) {
@@ -670,7 +775,6 @@
                 }
             }
             
-            // Also fill any remaining powerups in the area
             for (let i = powerups.length - 1; i >= 0; i--) {
                 const p = powerups[i];
                 const dist = Math.abs(p.x - x) + Math.abs(p.y - y);
@@ -680,7 +784,6 @@
                 }
             }
             
-            // Play powerup sound
             playNote(880, 0.1);
             setTimeout(() => playNote(1108, 0.1), 120);
             setTimeout(() => playNote(1318, 0.15), 240);
@@ -689,7 +792,6 @@
             updateUI();
             draw();
             
-            // Reset powerup status after 2 seconds
             clearTimeout(powerupTimer);
             powerupTimer = setTimeout(() => {
                 powerupActive = false;
@@ -776,7 +878,6 @@
                 for (let x = 2; x < GRID-2; x++) {
                     if (grid[y][x] === EMPTY || grid[y][x] === POWERUP) {
                         if (grid[y][x] === POWERUP) {
-                            // Collect any powerups in the area
                             const idx = powerups.findIndex(p => p.x === x && p.y === y);
                             if (idx !== -1) powerups.splice(idx, 1);
                         }
@@ -810,550 +911,5 @@
         let captured = 0;
         for (let y = 0; y < GRID; y++) {
             for (let x = 0; x < GRID; x++) {
-                if ((grid[y][x] === EMPTY || grid[y][x] === POWERUP) && !reachableSet.has(x + ',' + y)) {
-                    if (grid[y][x] === POWERUP) {
-                        const idx = powerups.findIndex(p => p.x === x && p.y === y);
-                        if (idx !== -1) powerups.splice(idx, 1);
-                    }
-                    grid[y][x] = CAPTURED;
-                    captured++;
-                }
-            }
-        }
-        return captured;
-    }
-
-    // ============================================================
-    //  LOOP DETECTION
-    // ============================================================
-    function checkLoopClosure(x, y) {
-        let connections = 0;
-        const dirs = [[0,1],[0,-1],[1,0],[-1,0]];
-        for (const [dx, dy] of dirs) {
-            const nx = x + dx, ny = y + dy;
-            if (nx >= 0 && nx < GRID && ny >= 0 && ny < GRID) {
-                if (grid[ny][nx] === WALL) connections++;
-            }
-        }
-        if (connections >= 2) {
-            const captured = captureEnclosedArea();
-            if (captured > 0) {
-                checkCornerBonus();
-                return true;
-            }
-        }
-        return false;
-    }
-
-    // ============================================================
-    //  WALL DRAWING
-    // ============================================================
-    function drawWall(x1, y1, x2, y2) {
-        let captured = false;
-        if (x1 === x2) {
-            const yMin = Math.min(y1, y2), yMax = Math.max(y1, y2);
-            for (let y = yMin; y <= yMax; y++) {
-                if (grid[y][x1] === EMPTY) {
-                    grid[y][x1] = WALL;
-                    if (checkLoopClosure(x1, y)) captured = true;
-                }
-            }
-        } else if (y1 === y2) {
-            const xMin = Math.min(x1, x2), xMax = Math.max(x1, x2);
-            for (let x = xMin; x <= xMax; x++) {
-                if (grid[y1][x] === EMPTY) {
-                    grid[y1][x] = WALL;
-                    if (checkLoopClosure(x, y1)) captured = true;
-                }
-            }
-        }
-        return captured;
-    }
-
-    // ============================================================
-    //  PLAYER MOVEMENT
-    // ============================================================
-    function movePlayer() {
-        if (gameOver || levelDone || !gameLoopActive || !gameStarted) return;
-
-        if (moveQueue.length > 0) {
-            const next = moveQueue.shift();
-            if (!(next.dx === -dir.dx && next.dy === -dir.dy)) {
-                dir = next;
-            }
-        }
-
-        if (dir.dx === 0 && dir.dy === 0) return;
-
-        const nx = player.x + dir.dx;
-        const ny = player.y + dir.dy;
-
-        if (nx < 0 || nx >= GRID || ny < 0 || ny >= GRID) return;
-        if (grid[ny][nx] === WALL || grid[ny][nx] === GOON) return;
-
-        prev.x = player.x;
-        prev.y = player.y;
-        player.x = nx;
-        player.y = ny;
-
-        // Check for powerup
-        if (grid[ny][nx] === POWERUP) {
-            collectPowerup(nx, ny);
-        }
-
-        if (grid[ny][nx] === EMPTY) {
-            const captured = drawWall(prev.x, prev.y, player.x, player.y);
-            if (captured) {
-                checkWin();
-            }
-        }
-
-        grid[ny][nx] = CAPTURED;
-        updateUI();
-        draw();
-        checkGoonCollision();
-    }
-
-    // ============================================================
-    //  GOON COLLISION
-    // ============================================================
-    function checkGoonCollision() {
-        for (const goon of goons) {
-            const dx = Math.abs(goon.x - player.x);
-            const dy = Math.abs(goon.y - player.y);
-            if (dx <= 1 && dy <= 1) {
-                loseLife();
-                return true;
-            }
-        }
-        return false;
-    }
-
-    // ============================================================
-    //  WIN CHECK
-    // ============================================================
-    function checkWin() {
-        let captured = 0;
-        for (let y = 0; y < GRID; y++)
-            for (let x = 0; x < GRID; x++)
-                if (grid[y][x] === CAPTURED) captured++;
-        const pct = Math.round((captured / (GRID * GRID)) * 100);
-
-        if (pct >= 80 && !levelDone) {
-            levelDone = true;
-            gameOver = true;
-            statusEl.textContent = '✅ Level ' + level + ' COMPLETE! 🦇';
-            statusEl.style.color = '#44ff88';
-            statusEl.style.textShadow = '0 0 30px #44ff88';
-            stopLoops();
-            if (level > maxUnlockedLevel) {
-                maxUnlockedLevel = level;
-            }
-            playNote(523, 0.12);
-            setTimeout(() => playNote(659, 0.12), 150);
-            setTimeout(() => playNote(784, 0.18), 300);
-            setTimeout(() => {
-                if (!gameOver) nextLevel();
-            }, 1500);
-        }
-        updateUI();
-    }
-
-    // ============================================================
-    //  GOON AI
-    // ============================================================
-    function moveGoons() {
-        if (gameOver || levelDone || !gameLoopActive || !gameStarted) return;
-
-        const dirs = [[0,1],[0,-1],[1,0],[-1,0]];
-        for (const goon of goons) {
-            const shuffled = [...dirs];
-            for (let i = shuffled.length - 1; i > 0; i--) {
-                const j = Math.floor(Math.random() * (i + 1));
-                [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
-            }
-            let moved = false;
-            for (const [dx, dy] of shuffled) {
-                const nx = goon.x + dx;
-                const ny = goon.y + dy;
-                if (nx >= 0 && nx < GRID && ny >= 0 && ny < GRID) {
-                    if (grid[ny][nx] !== WALL && grid[ny][nx] !== CAPTURED && grid[ny][nx] !== GOON && grid[ny][nx] !== POWERUP) {
-                        grid[goon.y][goon.x] = EMPTY;
-                        goon.x = nx;
-                        goon.y = ny;
-                        grid[ny][nx] = GOON;
-                        moved = true;
-                        break;
-                    }
-                }
-            }
-        }
-
-        checkGoonCollision();
-        draw();
-    }
-
-    // ============================================================
-    //  LIVES
-    // ============================================================
-    function loseLife() {
-        lives--;
-        livesDisplay.textContent = lives;
-        
-        playNote(200, 0.3, 'sawtooth', 0.15);
-        setTimeout(() => playNote(150, 0.4, 'sawtooth', 0.12), 200);
-        
-        if (lives <= 0) {
-            gameOver = true;
-            statusEl.textContent = '💀 GAME OVER - Joker Wins! 💀';
-            statusEl.style.color = '#ff0000';
-            statusEl.style.textShadow = '0 0 30px #ff0000';
-            stopLoops();
-            draw();
-            return;
-        }
-
-        statusEl.textContent = '💔 Lost a life! ' + lives + ' remaining';
-        statusEl.style.color = '#ff6644';
-        statusEl.style.textShadow = '0 0 20px #ff6644';
-
-        player.x = 10;
-        player.y = 10;
-        prev.x = 10;
-        prev.y = 10;
-        dir = { dx: 0, dy: 0 };
-        moveQueue = [];
-        cornerBonusActive = false;
-        powerupActive = false;
-        
-        for (const g of goons) {
-            if (g.x >= 0 && g.x < GRID && g.y >= 0 && g.y < GRID) {
-                grid[g.y][g.x] = EMPTY;
-            }
-        }
-        
-        spawnGoons(goonCount);
-        grid[player.y][player.x] = CAPTURED;
-
-        updateUI();
-        draw();
-        
-        if (!gameOver && !levelDone) {
-            startLoops();
-        }
-    }
-
-    // ============================================================
-    //  LEVEL MANAGEMENT
-    // ============================================================
-    function initGame() {
-        level = 1;
-        lives = 3;
-        gameOver = false;
-        levelDone = false;
-        player.x = 10;
-        player.y = 10;
-        prev.x = 10;
-        prev.y = 10;
-        dir = { dx: 0, dy: 0 };
-        moveQueue = [];
-        gameLoopActive = true;
-        cornerBonusActive = false;
-        powerupActive = false;
-        maxUnlockedLevel = Math.max(maxUnlockedLevel, 1);
-
-        stopLoops();
-        const config = getConfig(level);
-        goonCount = config.goons;
-        goonSpeed = config.speed;
-
-        grid = makeGrid();
-        grid[player.y][player.x] = CAPTURED;
-        spawnGoons(goonCount);
-        spawnPowerups();
-
-        statusEl.textContent = '⬆️⬇️⬅️➡️ Draw walls & trap the Joker Goons!';
-        statusEl.style.color = '#ffdd44';
-        statusEl.style.textShadow = '0 0 15px #ffdd44';
-        updateUI();
-        draw();
-        startLoops();
-    }
-
-    function resetGame() {
-        if (!gameStarted) {
-            startGame();
-            return;
-        }
-        stopLoops();
-        gameOver = false;
-        levelDone = false;
-        gameLoopActive = true;
-        lives = 3;
-        player.x = 10;
-        player.y = 10;
-        prev.x = 10;
-        prev.y = 10;
-        dir = { dx: 0, dy: 0 };
-        moveQueue = [];
-        cornerBonusActive = false;
-        powerupActive = false;
-        
-        const config = getConfig(level);
-        goonCount = config.goons;
-        goonSpeed = config.speed;
-
-        grid = makeGrid();
-        grid[player.y][player.x] = CAPTURED;
-        spawnGoons(goonCount);
-        spawnPowerups();
-
-        statusEl.textContent = '⬆️⬇️⬅️➡️ Draw walls & trap the Joker Goons!';
-        statusEl.style.color = '#ffdd44';
-        statusEl.style.textShadow = '0 0 15px #ffdd44';
-        updateUI();
-        draw();
-        startLoops();
-    }
-
-    function nextLevel() {
-        if (level >= MAX_LEVELS) {
-            statusEl.textContent = '🏆 YOU BEAT ALL 60 LEVELS! BATMAN WINS! 🏆';
-            statusEl.style.color = '#ffdd44';
-            statusEl.style.textShadow = '0 0 30px #ffdd44';
-            gameOver = true;
-            levelDone = false;
-            gameLoopActive = false;
-            stopLoops();
-            draw();
-            return;
-        }
-
-        level++;
-        if (level > maxUnlockedLevel) {
-            maxUnlockedLevel = level;
-        }
-        gameOver = false;
-        levelDone = false;
-        lives = 3;
-        player.x = 10;
-        player.y = 10;
-        prev.x = 10;
-        prev.y = 10;
-        dir = { dx: 0, dy: 0 };
-        moveQueue = [];
-        gameLoopActive = true;
-        cornerBonusActive = false;
-        powerupActive = false;
-
-        const config = getConfig(level);
-        goonCount = config.goons;
-        goonSpeed = config.speed;
-
-        grid = makeGrid();
-        grid[player.y][player.x] = CAPTURED;
-        spawnGoons(goonCount);
-        spawnPowerups();
-
-        statusEl.textContent = '🦇 Level ' + level + ' - ' + goonCount + ' Joker Goons!';
-        statusEl.style.color = '#ffdd44';
-        statusEl.style.textShadow = '0 0 20px #ffdd44';
-        updateUI();
-        draw();
-        startLoops();
-    }
-
-    function jumpToLevel(targetLevel) {
-        if (targetLevel > maxUnlockedLevel) {
-            alert('You haven\'t unlocked level ' + targetLevel + ' yet!');
-            return;
-        }
-        level = targetLevel - 1;
-        lives = 3;
-        stopLoops();
-        gameLoopActive = true;
-        gameOver = false;
-        levelDone = false;
-        cornerBonusActive = false;
-        powerupActive = false;
-        if (!gameStarted) {
-            startGame();
-        } else {
-            nextLevel();
-        }
-        closeLevelSelect();
-    }
-
-    // ============================================================
-    //  LOOPS
-    // ============================================================
-    function startLoops() {
-        stopLoops();
-        gameLoopActive = true;
-        moveInterval = setInterval(movePlayer, 100);
-        goonInterval = setInterval(moveGoons, goonSpeed);
-    }
-
-    function stopLoops() {
-        gameLoopActive = false;
-        if (moveInterval) clearInterval(moveInterval);
-        if (goonInterval) clearInterval(goonInterval);
-        moveInterval = null;
-        goonInterval = null;
-    }
-
-    // ============================================================
-    //  UI
-    // ============================================================
-    function updateUI() {
-        levelDisplay.textContent = level;
-        livesDisplay.textContent = lives;
-
-        let captured = 0;
-        for (let y = 0; y < GRID; y++)
-            for (let x = 0; x < GRID; x++)
-                if (grid[y][x] === CAPTURED) captured++;
-        const pct = Math.round((captured / (GRID * GRID)) * 100);
-        percentDisplay.textContent = Math.min(pct, 80);
-        percentDisplay.style.color = pct >= 80 ? '#44ff88' : '#ffdd44';
-    }
-
-    // ============================================================
-    //  DRAW
-    // ============================================================
-    function draw() {
-        ctx.clearRect(0, 0, 600, 600);
-
-        for (let y = 0; y < GRID; y++) {
-            for (let x = 0; x < GRID; x++) {
-                const px = x * CELL, py = y * CELL;
-                const state = grid[y][x];
-                let color = '#1a1a2e';
-                if (state === WALL) color = '#4a4a7a';
-                else if (state === CAPTURED) color = '#2a2a5a';
-                else if (state === GOON) color = '#6b0020';
-                else if (state === POWERUP) color = '#ff00ff';
-                ctx.fillStyle = color;
-                ctx.fillRect(px, py, CELL - 1, CELL - 1);
-                ctx.strokeStyle = '#333355';
-                ctx.lineWidth = 0.5;
-                ctx.strokeRect(px, py, CELL, CELL);
-                
-                // Draw powerup symbol
-                if (state === POWERUP) {
-                    ctx.fillStyle = '#ffffff';
-                    ctx.font = (CELL - 6) + 'px Arial';
-                    ctx.textAlign = 'center';
-                    ctx.textBaseline = 'middle';
-                    ctx.fillText('⭐', px + CELL/2, py + CELL/2 + 1);
-                }
-            }
-        }
-
-        // Highlight corners
-        const cornerColor = 'rgba(68, 255, 136, 0.12)';
-        ctx.fillStyle = cornerColor;
-        ctx.fillRect(0, 0, CELL*3, CELL*3);
-        ctx.fillRect(GRID*CELL - CELL*3, 0, CELL*3, CELL*3);
-        ctx.fillRect(0, GRID*CELL - CELL*3, CELL*3, CELL*3);
-        ctx.fillRect(GRID*CELL - CELL*3, GRID*CELL - CELL*3, CELL*3, CELL*3);
-
-        // Batman
-        const bx = player.x * CELL + CELL / 2;
-        const by = player.y * CELL + CELL / 2;
-        const r = CELL / 2 - 3;
-
-        const grad = ctx.createRadialGradient(bx, by, 0, bx, by, r + 10);
-        grad.addColorStop(0, 'rgba(240, 192, 64, 0.6)');
-        grad.addColorStop(1, 'rgba(240, 192, 64, 0)');
-        ctx.fillStyle = grad;
-        ctx.beginPath();
-        ctx.arc(bx, by, r + 10, 0, Math.PI * 2);
-        ctx.fill();
-
-        ctx.beginPath();
-        ctx.arc(bx, by, r, 0, Math.PI * 2);
-        ctx.fillStyle = '#f0c040';
-        ctx.shadowColor = '#f0c040';
-        ctx.shadowBlur = 25;
-        ctx.fill();
-        ctx.shadowBlur = 0;
-        ctx.fillStyle = '#0a0a0a';
-        ctx.font = (CELL - 4) + 'px Arial';
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'middle';
-        ctx.fillText('🦇', bx, by + 1);
-
-        // Goons
-        for (const goon of goons) {
-            const gx = goon.x * CELL + CELL / 2;
-            const gy = goon.y * CELL + CELL / 2;
-
-            const ggrad = ctx.createRadialGradient(gx, gy, 0, gx, gy, r + 8);
-            ggrad.addColorStop(0, 'rgba(139, 0, 139, 0.5)');
-            ggrad.addColorStop(1, 'rgba(139, 0, 139, 0)');
-            ctx.fillStyle = ggrad;
-            ctx.beginPath();
-            ctx.arc(gx, gy, r + 8, 0, Math.PI * 2);
-            ctx.fill();
-
-            ctx.beginPath();
-            ctx.arc(gx, gy, r, 0, Math.PI * 2);
-            ctx.fillStyle = '#8b008b';
-            ctx.shadowColor = '#ff00ff';
-            ctx.shadowBlur = 15;
-            ctx.fill();
-            ctx.shadowBlur = 0;
-            ctx.fillStyle = '#ffffff';
-            ctx.font = (CELL - 4) + 'px Arial';
-            ctx.textAlign = 'center';
-            ctx.textBaseline = 'middle';
-            ctx.fillText('🎭', gx, gy + 1);
-        }
-    }
-
-    // ============================================================
-    //  CONTROLS
-    // ============================================================
-    document.addEventListener('keydown', (e) => {
-        if (!gameStarted) return;
-        const key = e.key;
-        if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(key)) {
-            e.preventDefault();
-        }
-        let nd = null;
-        if (key === 'ArrowUp') nd = { dx: 0, dy: -1 };
-        else if (key === 'ArrowDown') nd = { dx: 0, dy: 1 };
-        else if (key === 'ArrowLeft') nd = { dx: -1, dy: 0 };
-        else if (key === 'ArrowRight') nd = { dx: 1, dy: 0 };
-        else if (key === 'r' || key === 'R') { resetGame(); return; }
-        if (nd && moveQueue.length < 3) moveQueue.push(nd);
-    });
-
-    document.querySelectorAll('#touchControls button').forEach(btn => {
-        const handler = () => {
-            if (!gameStarted) return;
-            const dx = parseInt(btn.dataset.dx || '0');
-            const dy = parseInt(btn.dataset.dy || '0');
-            if (dx === 0 && dy === 0) return;
-            if (moveQueue.length < 3) moveQueue.push({ dx, dy });
-        };
-        btn.addEventListener('click', handler);
-        btn.addEventListener('touchstart', (e) => { e.preventDefault(); handler(); });
-    });
-
-    document.getElementById('restartBtn').addEventListener('click', resetGame);
-
-    // Override level select button in game to use showLevelSelect
-    document.querySelector('.controls button:first-child').onclick = showLevelSelect;
-
-    // ============================================================
-    //  SHOW MENU ON LOAD
-    // ============================================================
-    gameStarted = false;
-    mainMenu.classList.remove('hidden');
-    maxUnlockedLevel = 1;
-    draw();
-</script>
-</body>
-</html>
+                if ((grid[y][x] === EMPTY || grid[y][x] === POWERUP) && !reachable
+           
