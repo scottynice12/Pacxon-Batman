@@ -126,6 +126,13 @@
         .controls button.music-btn:hover {
             box-shadow: 0 0 30px rgba(139, 0, 139, 0.5);
         }
+        .controls button.powerup-btn {
+            background: #ff00ff;
+            color: white;
+        }
+        .controls button.powerup-btn:hover {
+            box-shadow: 0 0 30px rgba(255, 0, 255, 0.5);
+        }
         .touch-controls {
             display: none;
             grid-template-columns: repeat(3, 55px);
@@ -156,7 +163,7 @@
             left: 0;
             right: 0;
             bottom: 0;
-            background: rgba(10, 10, 30, 0.95);
+            background: rgba(10, 10, 30, 0.97);
             border-radius: 20px;
             display: flex;
             flex-direction: column;
@@ -166,10 +173,10 @@
             padding: 20px;
         }
         #mainMenu .bat-symbol {
-            font-size: 120px;
+            font-size: 100px;
             color: #f0c040;
             text-shadow: 0 0 60px #f0c040, 0 0 120px rgba(240, 192, 64, 0.3);
-            margin-bottom: 20px;
+            margin-bottom: 10px;
             animation: pulse 2s ease-in-out infinite;
         }
         @keyframes pulse {
@@ -178,42 +185,63 @@
         }
         #mainMenu .title {
             color: #f0c040;
-            font-size: 36px;
+            font-size: 32px;
             text-shadow: 0 0 30px #f0c040;
             letter-spacing: 4px;
-            margin-bottom: 10px;
+            margin-bottom: 5px;
         }
         #mainMenu .subtitle {
             color: #aaa;
-            font-size: 16px;
-            margin-bottom: 30px;
+            font-size: 14px;
+            margin-bottom: 20px;
             letter-spacing: 2px;
         }
-        #mainMenu .start-btn {
+        .menu-buttons {
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+        #mainMenu .menu-btn {
             background: #f0c040;
             color: #0a0a0a;
             border: none;
-            padding: 16px 60px;
+            padding: 14px 40px;
             border-radius: 50px;
-            font-size: 24px;
+            font-size: 18px;
             font-weight: bold;
             cursor: pointer;
             transition: 0.3s;
             font-family: 'Arial Black', sans-serif;
-            box-shadow: 0 0 40px rgba(240, 192, 64, 0.3);
-            letter-spacing: 3px;
+            box-shadow: 0 0 30px rgba(240, 192, 64, 0.2);
+            letter-spacing: 2px;
+            min-width: 160px;
         }
-        #mainMenu .start-btn:hover {
-            transform: scale(1.1);
-            box-shadow: 0 0 60px rgba(240, 192, 64, 0.6);
+        #mainMenu .menu-btn:hover {
+            transform: scale(1.08);
+            box-shadow: 0 0 50px rgba(240, 192, 64, 0.5);
         }
-        #mainMenu .start-btn:active {
-            transform: scale(0.95);
+        #mainMenu .menu-btn.secondary {
+            background: #333355;
+            color: #f0c040;
+            border: 2px solid #f0c040;
+        }
+        #mainMenu .menu-btn.secondary:hover {
+            background: #444466;
+            box-shadow: 0 0 50px rgba(240, 192, 64, 0.2);
+        }
+        #mainMenu .menu-btn.powerup-btn {
+            background: #ff00ff;
+            color: white;
+            border: 2px solid #ff00ff;
+        }
+        #mainMenu .menu-btn.powerup-btn:hover {
+            box-shadow: 0 0 50px rgba(255, 0, 255, 0.5);
         }
         #mainMenu .controls-info {
             color: #666;
-            font-size: 14px;
-            margin-top: 20px;
+            font-size: 13px;
+            margin-top: 15px;
             text-align: center;
             line-height: 1.8;
         }
@@ -223,14 +251,110 @@
         #mainMenu .controls-info .highlight-text {
             color: #44ff88;
         }
+        #mainMenu .controls-info .powerup-text {
+            color: #ff00ff;
+        }
+        
+        /* LEVEL SELECT MODAL */
+        #levelSelect {
+            display: none;
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(10, 10, 30, 0.95);
+            border-radius: 20px;
+            z-index: 200;
+            padding: 30px;
+            flex-direction: column;
+            align-items: center;
+            overflow-y: auto;
+        }
+        #levelSelect.active {
+            display: flex;
+        }
+        #levelSelect h2 {
+            color: #f0c040;
+            font-size: 24px;
+            margin-bottom: 15px;
+            text-shadow: 0 0 20px #f0c040;
+        }
+        #levelSelect .level-grid {
+            display: grid;
+            grid-template-columns: repeat(6, 1fr);
+            gap: 8px;
+            max-width: 500px;
+            width: 100%;
+            margin: 10px 0;
+        }
+        #levelSelect .level-btn {
+            padding: 12px 0;
+            border-radius: 10px;
+            border: 2px solid #333355;
+            background: rgba(0,0,0,0.5);
+            color: #666;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: 0.3s;
+            font-family: 'Arial Black', sans-serif;
+            text-align: center;
+        }
+        #levelSelect .level-btn.unlocked {
+            border-color: #f0c040;
+            color: #f0c040;
+            background: rgba(240, 192, 64, 0.1);
+        }
+        #levelSelect .level-btn.unlocked:hover {
+            background: rgba(240, 192, 64, 0.3);
+            transform: scale(1.05);
+            box-shadow: 0 0 20px rgba(240, 192, 64, 0.2);
+        }
+        #levelSelect .level-btn.current {
+            border-color: #44ff88;
+            color: #44ff88;
+            background: rgba(68, 255, 136, 0.2);
+            box-shadow: 0 0 20px rgba(68, 255, 136, 0.2);
+        }
+        #levelSelect .level-btn.locked {
+            cursor: not-allowed;
+            opacity: 0.4;
+        }
+        #levelSelect .close-btn {
+            margin-top: 15px;
+            background: #ff4444;
+            color: white;
+            border: none;
+            padding: 10px 40px;
+            border-radius: 30px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            font-family: 'Arial Black', sans-serif;
+            transition: 0.3s;
+        }
+        #levelSelect .close-btn:hover {
+            transform: scale(1.05);
+            box-shadow: 0 0 30px rgba(255, 68, 68, 0.3);
+        }
+        #levelSelect .unlock-info {
+            color: #888;
+            font-size: 14px;
+            margin-top: 10px;
+        }
+        #levelSelect .unlock-info span {
+            color: #44ff88;
+        }
         
         @media (max-width: 500px) {
-            #mainMenu .bat-symbol { font-size: 80px; }
-            #mainMenu .title { font-size: 24px; }
-            #mainMenu .start-btn { padding: 14px 40px; font-size: 18px; }
+            #mainMenu .bat-symbol { font-size: 70px; }
+            #mainMenu .title { font-size: 20px; }
+            #mainMenu .menu-btn { padding: 12px 25px; font-size: 15px; min-width: 120px; }
             .info { font-size: 11px; }
             .header { font-size: 16px; }
             .touch-controls { display: grid; }
+            #levelSelect .level-grid { grid-template-columns: repeat(5, 1fr); }
         }
         @media (pointer: coarse) {
             .touch-controls { display: grid; }
@@ -249,13 +373,25 @@
         <div class="bat-symbol">🦇</div>
         <div class="title">BATXON</div>
         <div class="subtitle">GOTHAM REALMS</div>
-        <button class="start-btn" onclick="startGame()">▶ START GAME</button>
+        <div class="menu-buttons">
+            <button class="menu-btn" onclick="startGame()">▶ START GAME</button>
+            <button class="menu-btn secondary" onclick="showLevelSelect()">📋 LEVELS</button>
+        </div>
         <div class="controls-info">
             <span>⬆⬇⬅➡</span> Move Batman<br>
             <span>Draw walls</span> to trap Joker Goons<br>
             Capture <span>80%</span> to win each level!<br>
-            <span class="highlight-text">★ Corner Bonus:</span> Fill opposite corners to auto-fill the middle!
+            <span class="highlight-text">★ Corner Bonus:</span> Fill opposite corners to auto-fill the middle!<br>
+            <span class="powerup-text">⚡ Power-ups:</span> Collect randomly spawning ⭐ for bonus fills!
         </div>
+    </div>
+
+    <!-- LEVEL SELECT -->
+    <div id="levelSelect">
+        <h2>📋 SELECT LEVEL</h2>
+        <div class="level-grid" id="levelGrid"></div>
+        <div class="unlock-info">Unlocked: <span id="unlockCount">0</span>/60</div>
+        <button class="close-btn" onclick="closeLevelSelect()">✕ Close</button>
     </div>
 
     <div class="header">🦇 BATXON: GOTHAM REALMS 🦇</div>
@@ -272,7 +408,7 @@
     <div id="status">⬆️⬇️⬅️➡️ Draw walls & trap the Joker Goons!</div>
     
     <div class="controls">
-        <button onclick="jumpLevel()">📋 Jump Level</button>
+        <button onclick="showLevelSelect()">📋 Levels</button>
         <button class="music-btn" id="musicBtn" onclick="toggleMusic()">🔇 Music Off</button>
     </div>
     
@@ -291,8 +427,8 @@
 
 <script>
     // ============================================================
-    //  BATXON: GOTHAM REALMS - WITH CORNER FILL MECHANIC
-    //  3-5 goons per level, restart button, working music
+    //  BATXON: GOTHAM REALMS - FINAL VERSION
+    //  Level Select (unlocked only), Power-ups, Corner Bonus
     // ============================================================
 
     // --- Music System ---
@@ -327,20 +463,16 @@
 
     function playBatmanTheme() {
         if (!musicPlaying) return;
-        
-        // Batman theme melody (simplified but recognizable)
         const notes = [
             [440, 0.12], [554, 0.12], [659, 0.12], [880, 0.18],
             [784, 0.12], [698, 0.12], [659, 0.12], [587, 0.18],
             [523, 0.12], [659, 0.12], [784, 0.12], [880, 0.18],
             [784, 0.12], [698, 0.12], [659, 0.12], [587, 0.25],
-            // Repeat with variation
             [440, 0.12], [554, 0.12], [659, 0.12], [880, 0.18],
             [784, 0.12], [698, 0.12], [659, 0.12], [587, 0.18],
             [523, 0.12], [659, 0.12], [784, 0.12], [988, 0.18],
             [880, 0.12], [784, 0.12], [698, 0.12], [659, 0.3]
         ];
-        
         let time = 0;
         for (const [freq, dur] of notes) {
             setTimeout(() => {
@@ -348,8 +480,6 @@
             }, time * 1000);
             time += dur + 0.04;
         }
-        
-        // Schedule next loop
         if (musicPlaying) {
             musicTimeout = setTimeout(playBatmanTheme, (time + 0.5) * 1000);
         }
@@ -383,14 +513,16 @@
     const MAX_LEVELS = 60;
 
     // --- Cell States ---
-    const EMPTY = 0, WALL = 1, CAPTURED = 2, GOON = 3;
+    const EMPTY = 0, WALL = 1, CAPTURED = 2, GOON = 3, POWERUP = 4;
 
     // --- Game State ---
     let grid = [];
     let player = { x: 10, y: 10 };
     let prev = { x: 10, y: 10 };
     let goons = [];
+    let powerups = [];
     let level = 1;
+    let maxUnlockedLevel = 1;
     let goonCount = 3;
     let goonSpeed = 500;
     let lives = 3;
@@ -403,6 +535,8 @@
     let gameLoopActive = false;
     let gameStarted = false;
     let cornerBonusActive = false;
+    let powerupActive = false;
+    let powerupTimer = null;
 
     // --- DOM Refs ---
     const levelDisplay = document.getElementById('levelDisplay');
@@ -411,29 +545,159 @@
     const statusEl = document.getElementById('status');
     const restartBtn = document.getElementById('restartBtn');
     const mainMenu = document.getElementById('mainMenu');
+    const levelSelect = document.getElementById('levelSelect');
+    const levelGrid = document.getElementById('levelGrid');
+    const unlockCount = document.getElementById('unlockCount');
 
     // ============================================================
     //  MAIN MENU
     // ============================================================
     function startGame() {
         mainMenu.classList.add('hidden');
+        levelSelect.classList.remove('active');
         gameStarted = true;
         initGame();
-        // Start music if not already playing
         if (!musicPlaying) {
             toggleMusic();
         }
     }
 
     // ============================================================
-    //  LEVEL CONFIG - 3-5 GOONS PER LEVEL
+    //  LEVEL SELECT
+    // ============================================================
+    function showLevelSelect() {
+        levelSelect.classList.add('active');
+        renderLevelGrid();
+    }
+
+    function closeLevelSelect() {
+        levelSelect.classList.remove('active');
+    }
+
+    function renderLevelGrid() {
+        levelGrid.innerHTML = '';
+        for (let i = 1; i <= MAX_LEVELS; i++) {
+            const btn = document.createElement('button');
+            btn.className = 'level-btn';
+            if (i <= maxUnlockedLevel) {
+                btn.classList.add('unlocked');
+                if (i === level) btn.classList.add('current');
+                btn.textContent = i;
+                btn.onclick = () => {
+                    if (i !== level) {
+                        level = i - 1;
+                        closeLevelSelect();
+                        if (gameStarted) {
+                            resetGame();
+                        } else {
+                            startGame();
+                        }
+                    }
+                };
+            } else {
+                btn.classList.add('locked');
+                btn.textContent = '🔒';
+            }
+            levelGrid.appendChild(btn);
+        }
+        unlockCount.textContent = maxUnlockedLevel;
+    }
+
+    // ============================================================
+    //  LEVEL CONFIG
     // ============================================================
     function getConfig(lvl) {
-        // 3-5 goons per level, randomized
-        const baseGoons = 3 + Math.floor(Math.random() * 3); // 3, 4, or 5
+        const baseGoons = 3 + Math.floor(Math.random() * 3);
         const g = Math.min(baseGoons + Math.floor((lvl - 1) / 10), 8);
         const s = Math.max(150, 500 - (lvl - 1) * 5);
         return { goons: g, speed: s };
+    }
+
+    // ============================================================
+    //  POWER-UP SYSTEM
+    // ============================================================
+    function spawnPowerups() {
+        powerups = [];
+        // Spawn 2-4 powerups per level
+        const count = 2 + Math.floor(Math.random() * 3);
+        for (let i = 0; i < count; i++) {
+            let attempts = 0;
+            let placed = false;
+            while (attempts < 200 && !placed) {
+                const x = Math.floor(Math.random() * GRID);
+                const y = Math.floor(Math.random() * GRID);
+                // Don't spawn on player, goons, walls, or other powerups
+                if (grid[y][x] === EMPTY && 
+                    !(x === player.x && y === player.y) &&
+                    !powerups.some(p => p.x === x && p.y === y)) {
+                    // Check not near player start
+                    const dist = Math.abs(x - 10) + Math.abs(y - 10);
+                    if (dist > 5) {
+                        grid[y][x] = POWERUP;
+                        powerups.push({ x, y, type: 'star' });
+                        placed = true;
+                    }
+                }
+                attempts++;
+            }
+        }
+    }
+
+    function collectPowerup(x, y) {
+        // Remove powerup from grid
+        const index = powerups.findIndex(p => p.x === x && p.y === y);
+        if (index !== -1) {
+            powerups.splice(index, 1);
+            grid[y][x] = CAPTURED;
+            
+            // Power-up effect: fill a large area!
+            powerupActive = true;
+            statusEl.textContent = '⚡ POWER-UP! Filling a large area! ⚡';
+            statusEl.style.color = '#ff00ff';
+            statusEl.style.textShadow = '0 0 30px #ff00ff';
+            
+            // Fill a 5x5 area around the powerup
+            let filled = 0;
+            for (let dy = -3; dy <= 3; dy++) {
+                for (let dx = -3; dx <= 3; dx++) {
+                    const nx = x + dx, ny = y + dy;
+                    if (nx >= 0 && nx < GRID && ny >= 0 && ny < GRID) {
+                        if (grid[ny][nx] === EMPTY || grid[ny][nx] === POWERUP) {
+                            grid[ny][nx] = CAPTURED;
+                            filled++;
+                        }
+                    }
+                }
+            }
+            
+            // Also fill any remaining powerups in the area
+            for (let i = powerups.length - 1; i >= 0; i--) {
+                const p = powerups[i];
+                const dist = Math.abs(p.x - x) + Math.abs(p.y - y);
+                if (dist < 5) {
+                    grid[p.y][p.x] = CAPTURED;
+                    powerups.splice(i, 1);
+                }
+            }
+            
+            // Play powerup sound
+            playNote(880, 0.1);
+            setTimeout(() => playNote(1108, 0.1), 120);
+            setTimeout(() => playNote(1318, 0.15), 240);
+            
+            checkWin();
+            updateUI();
+            draw();
+            
+            // Reset powerup status after 2 seconds
+            clearTimeout(powerupTimer);
+            powerupTimer = setTimeout(() => {
+                powerupActive = false;
+            }, 2000);
+            
+            return true;
+        }
+        return false;
     }
 
     // ============================================================
@@ -497,38 +761,34 @@
     }
 
     // ============================================================
-    //  CORNER FILL MECHANIC - NEW!
+    //  CORNER BONUS
     // ============================================================
     function checkCornerBonus() {
-        // Check if top-left corner is filled
         const tl = grid[0][0] === CAPTURED;
-        // Check if bottom-right corner is filled
         const br = grid[GRID-1][GRID-1] === CAPTURED;
-        // Check if top-right corner is filled
         const tr = grid[0][GRID-1] === CAPTURED;
-        // Check if bottom-left corner is filled
         const bl = grid[GRID-1][0] === CAPTURED;
         
-        let bonusActivated = false;
-        
-        // If TL and BR are filled, fill the middle!
-        if (tl && br && !cornerBonusActive) {
-            bonusActivated = true;
+        if ((tl && br || tr && bl) && !cornerBonusActive) {
+            cornerBonusActive = true;
             let filled = 0;
             for (let y = 2; y < GRID-2; y++) {
                 for (let x = 2; x < GRID-2; x++) {
-                    if (grid[y][x] === EMPTY) {
+                    if (grid[y][x] === EMPTY || grid[y][x] === POWERUP) {
+                        if (grid[y][x] === POWERUP) {
+                            // Collect any powerups in the area
+                            const idx = powerups.findIndex(p => p.x === x && p.y === y);
+                            if (idx !== -1) powerups.splice(idx, 1);
+                        }
                         grid[y][x] = CAPTURED;
                         filled++;
                     }
                 }
             }
             if (filled > 0) {
-                statusEl.textContent = '🌟 CORNER BONUS! Top-Left + Bottom-Right filled!';
+                statusEl.textContent = '🌟 CORNER BONUS! Massive area filled! 🌟';
                 statusEl.style.color = '#44ff88';
                 statusEl.style.textShadow = '0 0 30px #44ff88';
-                cornerBonusActive = true;
-                // Play happy sound
                 playNote(523, 0.1);
                 setTimeout(() => playNote(659, 0.1), 120);
                 setTimeout(() => playNote(784, 0.15), 240);
@@ -538,34 +798,6 @@
                 return true;
             }
         }
-        
-        // If TR and BL are filled, fill the middle!
-        if (tr && bl && !cornerBonusActive) {
-            bonusActivated = true;
-            let filled = 0;
-            for (let y = 2; y < GRID-2; y++) {
-                for (let x = 2; x < GRID-2; x++) {
-                    if (grid[y][x] === EMPTY) {
-                        grid[y][x] = CAPTURED;
-                        filled++;
-                    }
-                }
-            }
-            if (filled > 0) {
-                statusEl.textContent = '🌟 CORNER BONUS! Top-Right + Bottom-Left filled!';
-                statusEl.style.color = '#44ff88';
-                statusEl.style.textShadow = '0 0 30px #44ff88';
-                cornerBonusActive = true;
-                playNote(523, 0.1);
-                setTimeout(() => playNote(659, 0.1), 120);
-                setTimeout(() => playNote(784, 0.15), 240);
-                checkWin();
-                updateUI();
-                draw();
-                return true;
-            }
-        }
-        
         return false;
     }
 
@@ -578,7 +810,11 @@
         let captured = 0;
         for (let y = 0; y < GRID; y++) {
             for (let x = 0; x < GRID; x++) {
-                if (grid[y][x] === EMPTY && !reachableSet.has(x + ',' + y)) {
+                if ((grid[y][x] === EMPTY || grid[y][x] === POWERUP) && !reachableSet.has(x + ',' + y)) {
+                    if (grid[y][x] === POWERUP) {
+                        const idx = powerups.findIndex(p => p.x === x && p.y === y);
+                        if (idx !== -1) powerups.splice(idx, 1);
+                    }
                     grid[y][x] = CAPTURED;
                     captured++;
                 }
@@ -602,7 +838,6 @@
         if (connections >= 2) {
             const captured = captureEnclosedArea();
             if (captured > 0) {
-                // Check corner bonus after capture
                 checkCornerBonus();
                 return true;
             }
@@ -661,6 +896,11 @@
         player.x = nx;
         player.y = ny;
 
+        // Check for powerup
+        if (grid[ny][nx] === POWERUP) {
+            collectPowerup(nx, ny);
+        }
+
         if (grid[ny][nx] === EMPTY) {
             const captured = drawWall(prev.x, prev.y, player.x, player.y);
             if (captured) {
@@ -675,7 +915,7 @@
     }
 
     // ============================================================
-    //  GOON COLLISION - KILLS PLAYER!
+    //  GOON COLLISION
     // ============================================================
     function checkGoonCollision() {
         for (const goon of goons) {
@@ -706,7 +946,9 @@
             statusEl.style.color = '#44ff88';
             statusEl.style.textShadow = '0 0 30px #44ff88';
             stopLoops();
-            // Victory fanfare
+            if (level > maxUnlockedLevel) {
+                maxUnlockedLevel = level;
+            }
             playNote(523, 0.12);
             setTimeout(() => playNote(659, 0.12), 150);
             setTimeout(() => playNote(784, 0.18), 300);
@@ -735,7 +977,7 @@
                 const nx = goon.x + dx;
                 const ny = goon.y + dy;
                 if (nx >= 0 && nx < GRID && ny >= 0 && ny < GRID) {
-                    if (grid[ny][nx] !== WALL && grid[ny][nx] !== CAPTURED && grid[ny][nx] !== GOON) {
+                    if (grid[ny][nx] !== WALL && grid[ny][nx] !== CAPTURED && grid[ny][nx] !== GOON && grid[ny][nx] !== POWERUP) {
                         grid[goon.y][goon.x] = EMPTY;
                         goon.x = nx;
                         goon.y = ny;
@@ -758,7 +1000,6 @@
         lives--;
         livesDisplay.textContent = lives;
         
-        // Death sound
         playNote(200, 0.3, 'sawtooth', 0.15);
         setTimeout(() => playNote(150, 0.4, 'sawtooth', 0.12), 200);
         
@@ -776,7 +1017,6 @@
         statusEl.style.color = '#ff6644';
         statusEl.style.textShadow = '0 0 20px #ff6644';
 
-        // Reset player position
         player.x = 10;
         player.y = 10;
         prev.x = 10;
@@ -784,15 +1024,14 @@
         dir = { dx: 0, dy: 0 };
         moveQueue = [];
         cornerBonusActive = false;
+        powerupActive = false;
         
-        // Clear goons from grid
         for (const g of goons) {
             if (g.x >= 0 && g.x < GRID && g.y >= 0 && g.y < GRID) {
                 grid[g.y][g.x] = EMPTY;
             }
         }
         
-        // Respawn goons
         spawnGoons(goonCount);
         grid[player.y][player.x] = CAPTURED;
 
@@ -820,6 +1059,8 @@
         moveQueue = [];
         gameLoopActive = true;
         cornerBonusActive = false;
+        powerupActive = false;
+        maxUnlockedLevel = Math.max(maxUnlockedLevel, 1);
 
         stopLoops();
         const config = getConfig(level);
@@ -829,6 +1070,7 @@
         grid = makeGrid();
         grid[player.y][player.x] = CAPTURED;
         spawnGoons(goonCount);
+        spawnPowerups();
 
         statusEl.textContent = '⬆️⬇️⬅️➡️ Draw walls & trap the Joker Goons!';
         statusEl.style.color = '#ffdd44';
@@ -847,7 +1089,6 @@
         gameOver = false;
         levelDone = false;
         gameLoopActive = true;
-        level = 1;
         lives = 3;
         player.x = 10;
         player.y = 10;
@@ -856,6 +1097,7 @@
         dir = { dx: 0, dy: 0 };
         moveQueue = [];
         cornerBonusActive = false;
+        powerupActive = false;
         
         const config = getConfig(level);
         goonCount = config.goons;
@@ -864,6 +1106,7 @@
         grid = makeGrid();
         grid[player.y][player.x] = CAPTURED;
         spawnGoons(goonCount);
+        spawnPowerups();
 
         statusEl.textContent = '⬆️⬇️⬅️➡️ Draw walls & trap the Joker Goons!';
         statusEl.style.color = '#ffdd44';
@@ -887,6 +1130,9 @@
         }
 
         level++;
+        if (level > maxUnlockedLevel) {
+            maxUnlockedLevel = level;
+        }
         gameOver = false;
         levelDone = false;
         lives = 3;
@@ -898,6 +1144,7 @@
         moveQueue = [];
         gameLoopActive = true;
         cornerBonusActive = false;
+        powerupActive = false;
 
         const config = getConfig(level);
         goonCount = config.goons;
@@ -906,6 +1153,7 @@
         grid = makeGrid();
         grid[player.y][player.x] = CAPTURED;
         spawnGoons(goonCount);
+        spawnPowerups();
 
         statusEl.textContent = '🦇 Level ' + level + ' - ' + goonCount + ' Joker Goons!';
         statusEl.style.color = '#ffdd44';
@@ -915,28 +1163,25 @@
         startLoops();
     }
 
-    function jumpLevel() {
-        if (gameOver) {
-            gameOver = false;
-            levelDone = false;
-            gameLoopActive = true;
+    function jumpToLevel(targetLevel) {
+        if (targetLevel > maxUnlockedLevel) {
+            alert('You haven\'t unlocked level ' + targetLevel + ' yet!');
+            return;
         }
-        const target = prompt('Jump to which level? (1-' + MAX_LEVELS + ')', '1');
-        if (target) {
-            const num = parseInt(target);
-            if (num >= 1 && num <= MAX_LEVELS) {
-                level = num - 1;
-                lives = 3;
-                stopLoops();
-                gameLoopActive = true;
-                gameOver = false;
-                levelDone = false;
-                cornerBonusActive = false;
-                nextLevel();
-            } else {
-                alert('Enter a number between 1 and ' + MAX_LEVELS);
-            }
+        level = targetLevel - 1;
+        lives = 3;
+        stopLoops();
+        gameLoopActive = true;
+        gameOver = false;
+        levelDone = false;
+        cornerBonusActive = false;
+        powerupActive = false;
+        if (!gameStarted) {
+            startGame();
+        } else {
+            nextLevel();
         }
+        closeLevelSelect();
     }
 
     // ============================================================
@@ -983,24 +1228,35 @@
             for (let x = 0; x < GRID; x++) {
                 const px = x * CELL, py = y * CELL;
                 const state = grid[y][x];
-                ctx.fillStyle = state === EMPTY ? '#1a1a2e' :
-                                state === WALL ? '#4a4a7a' :
-                                state === CAPTURED ? '#2a2a5a' :
-                                '#6b0020';
+                let color = '#1a1a2e';
+                if (state === WALL) color = '#4a4a7a';
+                else if (state === CAPTURED) color = '#2a2a5a';
+                else if (state === GOON) color = '#6b0020';
+                else if (state === POWERUP) color = '#ff00ff';
+                ctx.fillStyle = color;
                 ctx.fillRect(px, py, CELL - 1, CELL - 1);
                 ctx.strokeStyle = '#333355';
                 ctx.lineWidth = 0.5;
                 ctx.strokeRect(px, py, CELL, CELL);
+                
+                // Draw powerup symbol
+                if (state === POWERUP) {
+                    ctx.fillStyle = '#ffffff';
+                    ctx.font = (CELL - 6) + 'px Arial';
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'middle';
+                    ctx.fillText('⭐', px + CELL/2, py + CELL/2 + 1);
+                }
             }
         }
 
-        // Highlight corners for bonus mechanic
-        const cornerColor = 'rgba(68, 255, 136, 0.15)';
+        // Highlight corners
+        const cornerColor = 'rgba(68, 255, 136, 0.12)';
         ctx.fillStyle = cornerColor;
-        ctx.fillRect(0, 0, CELL*2, CELL*2);
-        ctx.fillRect(GRID*CELL - CELL*2, 0, CELL*2, CELL*2);
-        ctx.fillRect(0, GRID*CELL - CELL*2, CELL*2, CELL*2);
-        ctx.fillRect(GRID*CELL - CELL*2, GRID*CELL - CELL*2, CELL*2, CELL*2);
+        ctx.fillRect(0, 0, CELL*3, CELL*3);
+        ctx.fillRect(GRID*CELL - CELL*3, 0, CELL*3, CELL*3);
+        ctx.fillRect(0, GRID*CELL - CELL*3, CELL*3, CELL*3);
+        ctx.fillRect(GRID*CELL - CELL*3, GRID*CELL - CELL*3, CELL*3, CELL*3);
 
         // Batman
         const bx = player.x * CELL + CELL / 2;
@@ -1074,7 +1330,6 @@
         if (nd && moveQueue.length < 3) moveQueue.push(nd);
     });
 
-    // Touch controls
     document.querySelectorAll('#touchControls button').forEach(btn => {
         const handler = () => {
             if (!gameStarted) return;
@@ -1087,14 +1342,17 @@
         btn.addEventListener('touchstart', (e) => { e.preventDefault(); handler(); });
     });
 
-    // Restart button in info panel
     document.getElementById('restartBtn').addEventListener('click', resetGame);
+
+    // Override level select button in game to use showLevelSelect
+    document.querySelector('.controls button:first-child').onclick = showLevelSelect;
 
     // ============================================================
     //  SHOW MENU ON LOAD
     // ============================================================
     gameStarted = false;
     mainMenu.classList.remove('hidden');
+    maxUnlockedLevel = 1;
     draw();
 </script>
 </body>
