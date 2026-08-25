@@ -187,8 +187,8 @@
 
 <script>
     // ============================================================
-    //  BATXON: GOTHAM REALMS - SNAKE-STYLE MOVEMENT
-    //  Proper loop-based capture, 3 lives, 60 levels
+    //  BATXON: GOTHAM REALMS - PROPER LOOP CAPTURE
+    //  You ONLY capture when you close a loop!
     // ============================================================
 
     const canvas = document.getElementById('gameCanvas');
@@ -217,13 +217,14 @@
     let lives = 3;
     let maxLives = 3;
     let gameLoopInterval = null;
-    let gameSpeed = 100; // ms between moves (Snake-style)
+    let gameSpeed = 100;
     let moveTimer = null;
-    let wallHistory = [];
     let direction = { dx: 0, dy: 0 };
-    let nextDirection = { dx: 0, dy: 0 };
-    let isMoving = false;
     let moveQueue = [];
+    let isMoving = false;
+    
+    // Track wall segments to detect loop closure
+    let wallSegments = [];
     
     // DOM elements
     const levelDisplay = document.getElementById('levelDisplay');
@@ -281,8 +282,58 @@
     }
     
     // ============================================================
-    //  LOOP DETECTION & CAPTURE
+    //  PROPER LOOP DETECTION - THE FIX!
     // ============================================================
+    
+    // Check if a new wall segment closes a loop
+    function checkLoopClosure(x, y) {
+        // A loop is closed when a wall segment connects to existing walls
+        // AND the player is now trapped in an enclosed area
+        
+        // First, check if this wall segment connects to existing walls
+        let connections = 0;
+        const dirs = [[0,1],[0,-1],[1,0],[-1,0]];
+        for (const [dx, dy] of dirs) {
+            const nx = x + dx;
+            const ny = y + dy;
+            if (nx >= 0 && nx < GRID_SIZE && ny >= 0 && ny < GRID_SIZE) {
+                if (grid[ny][nx] === WALL) connections++;
+            }
+        }
+        
+        // If it connects to at least 2 walls, it might close a loop
+        if (connections >= 2) {
+            // Check if the player is now in a closed area
+            return detectEnclosedArea();
+        }
+        
+        return false;
+    }
+    
+    // Detect if the player is in an enclosed area
+    function detectEnclosedArea() {
+        // Find all cells reachable from player
+        const reachable = getReachableCells(playerX, playerY);
+        const reachableSet = new Set(reachable.map(([x, y]) => `${x},${y}`));
+        
+        // Find all empty cells NOT reachable from player
+        let enclosedCells = [];
+        for (let y = 0; y < GRID_SIZE; y++) {
+            for (let x = 0; x < GRID_SIZE; x++) {
+                if (grid[y][x] === EMPTY && !reachableSet.has(`${x},${y}`)) {
+                    enclosedCells.push([x, y]);
+                }
+            }
+        }
+        
+        // If there are enclosed cells, capture them!
+        if (enclosedCells.length > 0) {
+            return enclosedCells;
+        }
+        
+        return null;
+    }
+    
     function getReachableCells(startX, startY) {
         const visited = new Set();
         const queue = [{ x: startX, y: startY }];
@@ -310,27 +361,13 @@
         return result;
     }
     
-    function captureEnclosedArea() {
-        const reachable = getReachableCells(playerX, playerY);
-        const reachableSet = new Set(reachable.map(([x, y]) => `${x},${y}`));
-        
-        let captured = 0;
-        for (let y = 0; y < GRID_SIZE; y++) {
-            for (let x = 0; x < GRID_SIZE; x++) {
-                if (grid[y][x] === EMPTY && !reachableSet.has(`${x},${y}`)) {
-                    grid[y][x] = CAPTURED;
-                    captured++;
-                }
-            }
-        }
-        return captured;
-    }
-    
     // ============================================================
-    //  WALL DRAWING
+    //  WALL DRAWING WITH LOOP DETECTION
     // ============================================================
     function drawWallBetween(x1, y1, x2, y2) {
         let wallsDrawn = [];
+        let captured = 0;
+        let loopClosed = false;
         
         if (x1 === x2) {
             const yMin = Math.min(y1, y2);
@@ -339,6 +376,19 @@
                 if (grid[y][x1] === EMPTY) {
                     grid[y][x1] = WALL;
                     wallsDrawn.push({ x: x1, y: y });
+                    
+                    // Check if this wall closes a loop
+                    const enclosed = checkLoopClosure(x1, y);
+                    if (enclosed) {
+                        loopClosed = true;
+                        // Capture the enclosed cells
+                        for (const [cx, cy] of enclosed) {
+                            if (grid[cy][cx] === EMPTY) {
+                                grid[cy][cx] = CAPTURED;
+                                captured++;
+                            }
+                        }
+                    }
                 }
             }
         } else if (y1 === y2) {
@@ -348,18 +398,23 @@
                 if (grid[y1][x] === EMPTY) {
                     grid[y1][x] = WALL;
                     wallsDrawn.push({ x, y: y1 });
+                    
+                    // Check if this wall closes a loop
+                    const enclosed = checkLoopClosure(x, y1);
+                    if (enclosed) {
+                        loopClosed = true;
+                        for (const [cx, cy] of enclosed) {
+                            if (grid[cy][cx] === EMPTY) {
+                                grid[cy][cx] = CAPTURED;
+                                captured++;
+                            }
+                        }
+                    }
                 }
             }
         }
         
-        wallHistory.push(...wallsDrawn);
-        
-        if (wallsDrawn.length > 0) {
-            const captured = captureEnclosedArea();
-            return captured > 0;
-        }
-        
-        return false;
+        return captured > 0;
     }
     
     // ============================================================
@@ -421,7 +476,7 @@
     }
     
     // ============================================================
-    //  SNAKE GAME LOOP (Continuous movement)
+    //  SNAKE GAME LOOP
     // ============================================================
     function startSnakeLoop() {
         if (moveTimer) {
@@ -550,7 +605,6 @@
         prevX = 10;
         prevY = 10;
         direction = { dx: 0, dy: 0 };
-        nextDirection = { dx: 0, dy: 0 };
         moveQueue = [];
         grid[playerY][playerX] = CAPTURED;
         
@@ -563,7 +617,6 @@
         updateDisplay();
         draw();
         
-        // Restart movement
         if (!gameOver && !levelComplete) {
             startSnakeLoop();
         }
@@ -581,9 +634,7 @@
         prevX = 10;
         prevY = 10;
         lives = maxLives;
-        wallHistory = [];
         direction = { dx: 0, dy: 0 };
-        nextDirection = { dx: 0, dy: 0 };
         moveQueue = [];
         gameSpeed = 100;
         
@@ -636,9 +687,7 @@
         prevX = 10;
         prevY = 10;
         lives = maxLives;
-        wallHistory = [];
         direction = { dx: 0, dy: 0 };
-        nextDirection = { dx: 0, dy: 0 };
         moveQueue = [];
         
         const config = getLevelConfig(level);
@@ -754,7 +803,6 @@
         const by = playerY * CELL_SIZE + CELL_SIZE / 2;
         const radius = CELL_SIZE / 2 - 3;
         
-        // Glow
         const gradient = ctx.createRadialGradient(bx, by, 0, bx, by, radius + 10);
         gradient.addColorStop(0, 'rgba(240, 192, 64, 0.6)');
         gradient.addColorStop(1, 'rgba(240, 192, 64, 0)');
@@ -763,7 +811,6 @@
         ctx.arc(bx, by, radius + 10, 0, Math.PI * 2);
         ctx.fill();
         
-        // Body
         ctx.beginPath();
         ctx.arc(bx, by, radius, 0, Math.PI * 2);
         ctx.fillStyle = '#f0c040';
@@ -771,8 +818,6 @@
         ctx.shadowBlur = 25;
         ctx.fill();
         ctx.shadowBlur = 0;
-        
-        // Batman symbol
         ctx.fillStyle = '#0a0a0a';
         ctx.font = `${CELL_SIZE - 4}px Arial`;
         ctx.textAlign = 'center';
@@ -808,7 +853,7 @@
     }
     
     // ============================================================
-    //  KEYBOARD CONTROLS (Snake-style)
+    //  CONTROLS
     // ============================================================
     document.addEventListener('keydown', (e) => {
         const key = e.key;
@@ -824,26 +869,18 @@
         else if (key === 'r' || key === 'R') { initGame(); return; }
         else return;
         
-        if (newDir) {
-            // Add to queue (Snake-style buffering)
-            if (moveQueue.length < 3) {
-                moveQueue.push(newDir);
-            }
+        if (newDir && moveQueue.length < 3) {
+            moveQueue.push(newDir);
         }
     });
     
-    // ============================================================
-    //  MOBILE CONTROLS
-    // ============================================================
     document.querySelectorAll('.mobile-arrows button').forEach(btn => {
         const handlePress = () => {
             const dx = parseInt(btn.dataset.dx || '0');
             const dy = parseInt(btn.dataset.dy || '0');
             if (dx === 0 && dy === 0) return;
-            
-            const newDir = { dx, dy };
             if (moveQueue.length < 3) {
-                moveQueue.push(newDir);
+                moveQueue.push({ dx, dy });
             }
         };
         
