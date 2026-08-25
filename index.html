@@ -75,6 +75,19 @@
             border-color: #ff4444;
             color: #ff4444;
         }
+        .info .restart-btn {
+            border-color: #44ff88;
+            color: #44ff88;
+            cursor: pointer;
+            transition: 0.3s;
+            font-family: 'Arial Black', sans-serif;
+            font-size: 14px;
+            background: rgba(68, 255, 136, 0.1);
+        }
+        .info .restart-btn:hover {
+            background: rgba(68, 255, 136, 0.3);
+            transform: scale(1.05);
+        }
         #status {
             color: #ffdd44;
             text-align: center;
@@ -105,6 +118,13 @@
         .controls button:hover {
             transform: scale(1.05);
             box-shadow: 0 0 30px rgba(240, 192, 64, 0.5);
+        }
+        .controls button.music-btn {
+            background: #8b008b;
+            color: white;
+        }
+        .controls button.music-btn:hover {
+            box-shadow: 0 0 30px rgba(139, 0, 139, 0.5);
         }
         .touch-controls {
             display: none;
@@ -200,6 +220,9 @@
         #mainMenu .controls-info span {
             color: #f0c040;
         }
+        #mainMenu .controls-info .highlight-text {
+            color: #44ff88;
+        }
         
         @media (max-width: 500px) {
             #mainMenu .bat-symbol { font-size: 80px; }
@@ -213,7 +236,6 @@
             .touch-controls { display: grid; }
         }
         
-        /* Hide menu when game starts */
         #mainMenu.hidden {
             display: none;
         }
@@ -231,7 +253,8 @@
         <div class="controls-info">
             <span>⬆⬇⬅➡</span> Move Batman<br>
             <span>Draw walls</span> to trap Joker Goons<br>
-            Capture <span>80%</span> to win each level!
+            Capture <span>80%</span> to win each level!<br>
+            <span class="highlight-text">★ Corner Bonus:</span> Fill opposite corners to auto-fill the middle!
         </div>
     </div>
 
@@ -243,14 +266,14 @@
         <div>🏆 Level <span id="levelDisplay">1</span>/60</div>
         <div class="highlight">📊 <span id="percentDisplay">0</span>%</div>
         <div class="lives">❤️ <span id="livesDisplay">3</span></div>
-        <div>🤡 <span id="goonDisplay">3</span></div>
+        <div class="restart-btn" id="restartBtn" onclick="resetGame()">🔄 Restart</div>
     </div>
     
     <div id="status">⬆️⬇️⬅️➡️ Draw walls & trap the Joker Goons!</div>
     
     <div class="controls">
-        <button id="restartBtn" onclick="resetGame()">🔄 New Game</button>
         <button onclick="jumpLevel()">📋 Jump Level</button>
+        <button class="music-btn" id="musicBtn" onclick="toggleMusic()">🔇 Music Off</button>
     </div>
     
     <div class="touch-controls" id="touchControls">
@@ -268,9 +291,89 @@
 
 <script>
     // ============================================================
-    //  BATXON: GOTHAM REALMS - WITH MAIN MENU
-    //  Fixed: PacXon filling, goon collision, restart button
+    //  BATXON: GOTHAM REALMS - WITH CORNER FILL MECHANIC
+    //  3-5 goons per level, restart button, working music
     // ============================================================
+
+    // --- Music System ---
+    let audioCtx = null;
+    let musicPlaying = false;
+    let musicTimeout = null;
+
+    function initAudio() {
+        if (!audioCtx) {
+            audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        }
+        if (audioCtx.state === 'suspended') {
+            audioCtx.resume();
+        }
+    }
+
+    function playNote(freq, duration, type = 'square', volume = 0.12) {
+        if (!audioCtx || !musicPlaying) return;
+        try {
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.type = type;
+            osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+            gain.gain.setValueAtTime(volume, audioCtx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + duration);
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            osc.start();
+            osc.stop(audioCtx.currentTime + duration);
+        } catch(e) {}
+    }
+
+    function playBatmanTheme() {
+        if (!musicPlaying) return;
+        
+        // Batman theme melody (simplified but recognizable)
+        const notes = [
+            [440, 0.12], [554, 0.12], [659, 0.12], [880, 0.18],
+            [784, 0.12], [698, 0.12], [659, 0.12], [587, 0.18],
+            [523, 0.12], [659, 0.12], [784, 0.12], [880, 0.18],
+            [784, 0.12], [698, 0.12], [659, 0.12], [587, 0.25],
+            // Repeat with variation
+            [440, 0.12], [554, 0.12], [659, 0.12], [880, 0.18],
+            [784, 0.12], [698, 0.12], [659, 0.12], [587, 0.18],
+            [523, 0.12], [659, 0.12], [784, 0.12], [988, 0.18],
+            [880, 0.12], [784, 0.12], [698, 0.12], [659, 0.3]
+        ];
+        
+        let time = 0;
+        for (const [freq, dur] of notes) {
+            setTimeout(() => {
+                if (musicPlaying) playNote(freq, dur, 'square', 0.10);
+            }, time * 1000);
+            time += dur + 0.04;
+        }
+        
+        // Schedule next loop
+        if (musicPlaying) {
+            musicTimeout = setTimeout(playBatmanTheme, (time + 0.5) * 1000);
+        }
+    }
+
+    function toggleMusic() {
+        initAudio();
+        musicPlaying = !musicPlaying;
+        const btn = document.getElementById('musicBtn');
+        if (musicPlaying) {
+            btn.textContent = '🔊 Music On';
+            btn.style.background = '#44ff88';
+            btn.style.color = '#0a0a0a';
+            playBatmanTheme();
+        } else {
+            btn.textContent = '🔇 Music Off';
+            btn.style.background = '#8b008b';
+            btn.style.color = 'white';
+            if (musicTimeout) {
+                clearTimeout(musicTimeout);
+                musicTimeout = null;
+            }
+        }
+    }
 
     // --- Canvas Setup ---
     const canvas = document.getElementById('gameCanvas');
@@ -299,12 +402,12 @@
     let goonInterval = null;
     let gameLoopActive = false;
     let gameStarted = false;
+    let cornerBonusActive = false;
 
     // --- DOM Refs ---
     const levelDisplay = document.getElementById('levelDisplay');
     const percentDisplay = document.getElementById('percentDisplay');
     const livesDisplay = document.getElementById('livesDisplay');
-    const goonDisplay = document.getElementById('goonDisplay');
     const statusEl = document.getElementById('status');
     const restartBtn = document.getElementById('restartBtn');
     const mainMenu = document.getElementById('mainMenu');
@@ -316,13 +419,19 @@
         mainMenu.classList.add('hidden');
         gameStarted = true;
         initGame();
+        // Start music if not already playing
+        if (!musicPlaying) {
+            toggleMusic();
+        }
     }
 
     // ============================================================
-    //  LEVEL CONFIG
+    //  LEVEL CONFIG - 3-5 GOONS PER LEVEL
     // ============================================================
     function getConfig(lvl) {
-        const g = Math.min(3 + Math.floor((lvl - 1) / 4), 15);
+        // 3-5 goons per level, randomized
+        const baseGoons = 3 + Math.floor(Math.random() * 3); // 3, 4, or 5
+        const g = Math.min(baseGoons + Math.floor((lvl - 1) / 10), 8);
         const s = Math.max(150, 500 - (lvl - 1) * 5);
         return { goons: g, speed: s };
     }
@@ -388,6 +497,79 @@
     }
 
     // ============================================================
+    //  CORNER FILL MECHANIC - NEW!
+    // ============================================================
+    function checkCornerBonus() {
+        // Check if top-left corner is filled
+        const tl = grid[0][0] === CAPTURED;
+        // Check if bottom-right corner is filled
+        const br = grid[GRID-1][GRID-1] === CAPTURED;
+        // Check if top-right corner is filled
+        const tr = grid[0][GRID-1] === CAPTURED;
+        // Check if bottom-left corner is filled
+        const bl = grid[GRID-1][0] === CAPTURED;
+        
+        let bonusActivated = false;
+        
+        // If TL and BR are filled, fill the middle!
+        if (tl && br && !cornerBonusActive) {
+            bonusActivated = true;
+            let filled = 0;
+            for (let y = 2; y < GRID-2; y++) {
+                for (let x = 2; x < GRID-2; x++) {
+                    if (grid[y][x] === EMPTY) {
+                        grid[y][x] = CAPTURED;
+                        filled++;
+                    }
+                }
+            }
+            if (filled > 0) {
+                statusEl.textContent = '🌟 CORNER BONUS! Top-Left + Bottom-Right filled!';
+                statusEl.style.color = '#44ff88';
+                statusEl.style.textShadow = '0 0 30px #44ff88';
+                cornerBonusActive = true;
+                // Play happy sound
+                playNote(523, 0.1);
+                setTimeout(() => playNote(659, 0.1), 120);
+                setTimeout(() => playNote(784, 0.15), 240);
+                checkWin();
+                updateUI();
+                draw();
+                return true;
+            }
+        }
+        
+        // If TR and BL are filled, fill the middle!
+        if (tr && bl && !cornerBonusActive) {
+            bonusActivated = true;
+            let filled = 0;
+            for (let y = 2; y < GRID-2; y++) {
+                for (let x = 2; x < GRID-2; x++) {
+                    if (grid[y][x] === EMPTY) {
+                        grid[y][x] = CAPTURED;
+                        filled++;
+                    }
+                }
+            }
+            if (filled > 0) {
+                statusEl.textContent = '🌟 CORNER BONUS! Top-Right + Bottom-Left filled!';
+                statusEl.style.color = '#44ff88';
+                statusEl.style.textShadow = '0 0 30px #44ff88';
+                cornerBonusActive = true;
+                playNote(523, 0.1);
+                setTimeout(() => playNote(659, 0.1), 120);
+                setTimeout(() => playNote(784, 0.15), 240);
+                checkWin();
+                updateUI();
+                draw();
+                return true;
+            }
+        }
+        
+        return false;
+    }
+
+    // ============================================================
     //  PACXON-STYLE FILL
     // ============================================================
     function captureEnclosedArea() {
@@ -419,7 +601,11 @@
         }
         if (connections >= 2) {
             const captured = captureEnclosedArea();
-            return captured > 0;
+            if (captured > 0) {
+                // Check corner bonus after capture
+                checkCornerBonus();
+                return true;
+            }
         }
         return false;
     }
@@ -493,7 +679,6 @@
     // ============================================================
     function checkGoonCollision() {
         for (const goon of goons) {
-            // Same cell OR adjacent
             const dx = Math.abs(goon.x - player.x);
             const dy = Math.abs(goon.y - player.y);
             if (dx <= 1 && dy <= 1) {
@@ -521,6 +706,10 @@
             statusEl.style.color = '#44ff88';
             statusEl.style.textShadow = '0 0 30px #44ff88';
             stopLoops();
+            // Victory fanfare
+            playNote(523, 0.12);
+            setTimeout(() => playNote(659, 0.12), 150);
+            setTimeout(() => playNote(784, 0.18), 300);
             setTimeout(() => {
                 if (!gameOver) nextLevel();
             }, 1500);
@@ -569,6 +758,10 @@
         lives--;
         livesDisplay.textContent = lives;
         
+        // Death sound
+        playNote(200, 0.3, 'sawtooth', 0.15);
+        setTimeout(() => playNote(150, 0.4, 'sawtooth', 0.12), 200);
+        
         if (lives <= 0) {
             gameOver = true;
             statusEl.textContent = '💀 GAME OVER - Joker Wins! 💀';
@@ -576,7 +769,6 @@
             statusEl.style.textShadow = '0 0 30px #ff0000';
             stopLoops();
             draw();
-            restartBtn.textContent = '🔄 Play Again';
             return;
         }
 
@@ -591,6 +783,7 @@
         prev.y = 10;
         dir = { dx: 0, dy: 0 };
         moveQueue = [];
+        cornerBonusActive = false;
         
         // Clear goons from grid
         for (const g of goons) {
@@ -626,7 +819,7 @@
         dir = { dx: 0, dy: 0 };
         moveQueue = [];
         gameLoopActive = true;
-        restartBtn.textContent = '🔄 New Game';
+        cornerBonusActive = false;
 
         stopLoops();
         const config = getConfig(level);
@@ -650,7 +843,6 @@
             startGame();
             return;
         }
-        // Full reset from any state
         stopLoops();
         gameOver = false;
         levelDone = false;
@@ -663,7 +855,7 @@
         prev.y = 10;
         dir = { dx: 0, dy: 0 };
         moveQueue = [];
-        restartBtn.textContent = '🔄 New Game';
+        cornerBonusActive = false;
         
         const config = getConfig(level);
         goonCount = config.goons;
@@ -691,7 +883,6 @@
             gameLoopActive = false;
             stopLoops();
             draw();
-            restartBtn.textContent = '🔄 Play Again';
             return;
         }
 
@@ -706,7 +897,7 @@
         dir = { dx: 0, dy: 0 };
         moveQueue = [];
         gameLoopActive = true;
-        restartBtn.textContent = '🔄 New Game';
+        cornerBonusActive = false;
 
         const config = getConfig(level);
         goonCount = config.goons;
@@ -737,167 +928,4 @@
                 level = num - 1;
                 lives = 3;
                 stopLoops();
-                restartBtn.textContent = '🔄 New Game';
-                gameLoopActive = true;
-                gameOver = false;
-                levelDone = false;
-                nextLevel();
-            } else {
-                alert('Enter a number between 1 and ' + MAX_LEVELS);
-            }
-        }
-    }
-
-    // ============================================================
-    //  LOOPS
-    // ============================================================
-    function startLoops() {
-        stopLoops();
-        gameLoopActive = true;
-        moveInterval = setInterval(movePlayer, 100);
-        goonInterval = setInterval(moveGoons, goonSpeed);
-    }
-
-    function stopLoops() {
-        gameLoopActive = false;
-        if (moveInterval) clearInterval(moveInterval);
-        if (goonInterval) clearInterval(goonInterval);
-        moveInterval = null;
-        goonInterval = null;
-    }
-
-    // ============================================================
-    //  UI
-    // ============================================================
-    function updateUI() {
-        levelDisplay.textContent = level;
-        livesDisplay.textContent = lives;
-        goonDisplay.textContent = goonCount;
-
-        let captured = 0;
-        for (let y = 0; y < GRID; y++)
-            for (let x = 0; x < GRID; x++)
-                if (grid[y][x] === CAPTURED) captured++;
-        const pct = Math.round((captured / (GRID * GRID)) * 100);
-        percentDisplay.textContent = Math.min(pct, 80);
-        percentDisplay.style.color = pct >= 80 ? '#44ff88' : '#ffdd44';
-    }
-
-    // ============================================================
-    //  DRAW
-    // ============================================================
-    function draw() {
-        ctx.clearRect(0, 0, 600, 600);
-
-        for (let y = 0; y < GRID; y++) {
-            for (let x = 0; x < GRID; x++) {
-                const px = x * CELL, py = y * CELL;
-                const state = grid[y][x];
-                ctx.fillStyle = state === EMPTY ? '#1a1a2e' :
-                                state === WALL ? '#4a4a7a' :
-                                state === CAPTURED ? '#2a2a5a' :
-                                '#6b0020';
-                ctx.fillRect(px, py, CELL - 1, CELL - 1);
-                ctx.strokeStyle = '#333355';
-                ctx.lineWidth = 0.5;
-                ctx.strokeRect(px, py, CELL, CELL);
-            }
-        }
-
-        // Batman
-        const bx = player.x * CELL + CELL / 2;
-        const by = player.y * CELL + CELL / 2;
-        const r = CELL / 2 - 3;
-
-        const grad = ctx.createRadialGradient(bx, by, 0, bx, by, r + 10);
-        grad.addColorStop(0, 'rgba(240, 192, 64, 0.6)');
-        grad.addColorStop(1, 'rgba(240, 192, 64, 0)');
-        ctx.fillStyle = grad;
-        ctx.beginPath();
-        ctx.arc(bx, by, r + 10, 0, Math.PI * 2);
-        ctx.fill();
-
-        ctx.beginPath();
-        ctx.arc(bx, by, r, 0, Math.PI * 2);
-        ctx.fillStyle = '#f0c040';
-        ctx.shadowColor = '#f0c040';
-        ctx.shadowBlur = 25;
-        ctx.fill();
-        ctx.shadowBlur = 0;
-        ctx.fillStyle = '#0a0a0a';
-        ctx.font = (CELL - 4) + 'px Arial';
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'middle';
-        ctx.fillText('🦇', bx, by + 1);
-
-        // Goons
-        for (const goon of goons) {
-            const gx = goon.x * CELL + CELL / 2;
-            const gy = goon.y * CELL + CELL / 2;
-
-            const ggrad = ctx.createRadialGradient(gx, gy, 0, gx, gy, r + 8);
-            ggrad.addColorStop(0, 'rgba(139, 0, 139, 0.5)');
-            ggrad.addColorStop(1, 'rgba(139, 0, 139, 0)');
-            ctx.fillStyle = ggrad;
-            ctx.beginPath();
-            ctx.arc(gx, gy, r + 8, 0, Math.PI * 2);
-            ctx.fill();
-
-            ctx.beginPath();
-            ctx.arc(gx, gy, r, 0, Math.PI * 2);
-            ctx.fillStyle = '#8b008b';
-            ctx.shadowColor = '#ff00ff';
-            ctx.shadowBlur = 15;
-            ctx.fill();
-            ctx.shadowBlur = 0;
-            ctx.fillStyle = '#ffffff';
-            ctx.font = (CELL - 4) + 'px Arial';
-            ctx.textAlign = 'center';
-            ctx.textBaseline = 'middle';
-            ctx.fillText('🎭', gx, gy + 1);
-        }
-    }
-
-    // ============================================================
-    //  CONTROLS
-    // ============================================================
-    document.addEventListener('keydown', (e) => {
-        if (!gameStarted) return;
-        const key = e.key;
-        if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(key)) {
-            e.preventDefault();
-        }
-        let nd = null;
-        if (key === 'ArrowUp') nd = { dx: 0, dy: -1 };
-        else if (key === 'ArrowDown') nd = { dx: 0, dy: 1 };
-        else if (key === 'ArrowLeft') nd = { dx: -1, dy: 0 };
-        else if (key === 'ArrowRight') nd = { dx: 1, dy: 0 };
-        else if (key === 'r' || key === 'R') { resetGame(); return; }
-        if (nd && moveQueue.length < 3) moveQueue.push(nd);
-    });
-
-    // Touch controls
-    document.querySelectorAll('#touchControls button').forEach(btn => {
-        const handler = () => {
-            if (!gameStarted) return;
-            const dx = parseInt(btn.dataset.dx || '0');
-            const dy = parseInt(btn.dataset.dy || '0');
-            if (dx === 0 && dy === 0) return;
-            if (moveQueue.length < 3) moveQueue.push({ dx, dy });
-        };
-        btn.addEventListener('click', handler);
-        btn.addEventListener('touchstart', (e) => { e.preventDefault(); handler(); });
-    });
-
-    // ============================================================
-    //  SHOW MENU ON LOAD (game not started)
-    // ============================================================
-    // Game starts in menu state
-    gameStarted = false;
-    mainMenu.classList.remove('hidden');
-    
-    // Draw placeholder on canvas
-    draw();
-</script>
-</body>
-</html>
+                game
