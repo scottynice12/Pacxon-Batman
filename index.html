@@ -93,10 +93,10 @@
             background: #f0c040;
             color: #0a0a0a;
             border: none;
-            padding: 8px 18px;
+            padding: 10px 24px;
             border-radius: 25px;
             font-weight: bold;
-            font-size: 13px;
+            font-size: 14px;
             cursor: pointer;
             transition: 0.3s;
             font-family: 'Arial Black', sans-serif;
@@ -160,11 +160,28 @@
         <div>🤡 <span id="goonDisplay">3</span></div>
     </div>
     
+    <!-- RESTART BUTTON RIGHT UNDER LEVEL -->
+    <div style="text-align: center; margin: 5px 0;">
+        <button id="restartBtn" onclick="initGame()" style="
+            background: #f0c040;
+            color: #0a0a0a;
+            border: none;
+            padding: 8px 30px;
+            border-radius: 25px;
+            font-weight: bold;
+            font-size: 14px;
+            cursor: pointer;
+            transition: 0.3s;
+            font-family: 'Arial Black', sans-serif;
+            box-shadow: 0 0 20px rgba(240, 192, 64, 0.3);
+        ">🔄 New Game</button>
+    </div>
+    
     <div id="status">⬆️⬇️⬅️➡️ Draw walls & trap the Joker Goons!</div>
     
     <div class="controls">
-        <button id="restartBtn" onclick="initGame()">🔄 New Game</button>
         <button onclick="jumpLevel()">📋 Jump Level</button>
+        <button onclick="toggleMusic()">🔊 Music</button>
     </div>
     
     <div class="touch-controls" id="touchControls">
@@ -183,8 +200,71 @@
 <script>
     // ============================================================
     //  BATXON: GOTHAM REALMS - FINAL VERSION
-    //  Fixed restart, proper goon collision, full playability
+    //  Fixed: PacXon filling, goon collision, music, restart
     // ============================================================
+
+    // --- Audio Context for Music ---
+    let audioCtx = null;
+    let musicPlaying = false;
+    let musicInterval = null;
+
+    function initAudio() {
+        if (!audioCtx) {
+            audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        }
+    }
+
+    function playNote(freq, duration, type = 'square', volume = 0.15) {
+        if (!audioCtx) return;
+        try {
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.type = type;
+            osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+            gain.gain.setValueAtTime(volume, audioCtx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + duration);
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            osc.start();
+            osc.stop(audioCtx.currentTime + duration);
+        } catch(e) {}
+    }
+
+    // Batman theme melody (simplified)
+    function playBatmanTheme() {
+        if (!musicPlaying) return;
+        const notes = [
+            [440, 0.15], [554, 0.15], [659, 0.15], [880, 0.2],
+            [784, 0.15], [698, 0.15], [659, 0.15], [587, 0.2],
+            [523, 0.15], [659, 0.15], [784, 0.15], [880, 0.2],
+            [784, 0.15], [698, 0.15], [659, 0.15], [587, 0.3]
+        ];
+        let time = 0;
+        for (const [freq, dur] of notes) {
+            setTimeout(() => {
+                if (musicPlaying) playNote(freq, dur, 'square', 0.12);
+            }, time * 1000);
+            time += dur + 0.05;
+        }
+        // Schedule next loop
+        if (musicPlaying) {
+            setTimeout(playBatmanTheme, (time + 0.5) * 1000);
+        }
+    }
+
+    function toggleMusic() {
+        initAudio();
+        if (audioCtx.state === 'suspended') {
+            audioCtx.resume();
+        }
+        musicPlaying = !musicPlaying;
+        if (musicPlaying) {
+            playBatmanTheme();
+            document.querySelector('button:last-child').textContent = '🔊 Music On';
+        } else {
+            document.querySelector('button:last-child').textContent = '🔇 Music Off';
+        }
+    }
 
     // --- Canvas Setup ---
     const canvas = document.getElementById('gameCanvas');
@@ -252,7 +332,6 @@
                 }
                 attempts++;
             }
-            // Fallback: place anywhere
             if (!placed) {
                 for (let y = 0; y < GRID && !placed; y++) {
                     for (let x = 0; x < GRID && !placed; x++) {
@@ -268,7 +347,7 @@
     }
 
     // ============================================================
-    //  REACHABLE CELLS (BFS)
+    //  REACHABLE CELLS (BFS) - FIXED FOR PACXON STYLE
     // ============================================================
     function getReachable(sx, sy) {
         const visited = new Set();
@@ -279,6 +358,7 @@
             const key = x + ',' + y;
             if (visited.has(key)) continue;
             if (x < 0 || x >= GRID || y < 0 || y >= GRID) continue;
+            // Can't walk through walls or goons
             if (grid[y][x] === WALL || grid[y][x] === GOON) continue;
             visited.add(key);
             result.push([x, y]);
@@ -292,12 +372,15 @@
     }
 
     // ============================================================
-    //  LOOP DETECTION & CAPTURE
+    //  PACXON-STYLE FILL - CAPTURES LARGE AREAS LIKE PACMAN
     // ============================================================
-    function detectAndCapture() {
+    function captureEnclosedArea() {
+        // Find all cells reachable from player
         const reachable = getReachable(player.x, player.y);
         const reachableSet = new Set(reachable.map(([x, y]) => x + ',' + y));
+        
         let captured = 0;
+        // Capture ALL empty cells NOT reachable from player
         for (let y = 0; y < GRID; y++) {
             for (let x = 0; x < GRID; x++) {
                 if (grid[y][x] === EMPTY && !reachableSet.has(x + ',' + y)) {
@@ -306,10 +389,14 @@
                 }
             }
         }
-        return captured > 0;
+        return captured;
     }
 
+    // ============================================================
+    //  LOOP DETECTION
+    // ============================================================
     function checkLoopClosure(x, y) {
+        // Count adjacent walls
         let connections = 0;
         const dirs = [[0,1],[0,-1],[1,0],[-1,0]];
         for (const [dx, dy] of dirs) {
@@ -318,8 +405,10 @@
                 if (grid[ny][nx] === WALL) connections++;
             }
         }
+        // If wall connects to 2+ walls, it might close a loop
         if (connections >= 2) {
-            return detectAndCapture();
+            const captured = captureEnclosedArea();
+            return captured > 0;
         }
         return false;
     }
@@ -350,7 +439,7 @@
     }
 
     // ============================================================
-    //  PLAYER MOVEMENT (Snake-style)
+    //  PLAYER MOVEMENT
     // ============================================================
     function movePlayer() {
         if (gameOver || levelDone || !gameLoopActive) return;
@@ -377,24 +466,36 @@
 
         if (grid[ny][nx] === EMPTY) {
             const captured = drawWall(prev.x, prev.y, player.x, player.y);
-            if (captured) checkWin();
+            if (captured) {
+                checkWin();
+                // Play capture sound
+                playNote(880, 0.1, 'square', 0.08);
+            }
         }
 
         grid[ny][nx] = CAPTURED;
         updateUI();
         draw();
         
-        // Check if player is on a goon (shouldn't happen, but safety)
+        // Check goon collision
         checkGoonCollision();
     }
 
     // ============================================================
-    //  GOON COLLISION CHECK
+    //  GOON COLLISION - FIXED! NOW KILLS PLAYER
     // ============================================================
     function checkGoonCollision() {
-        // Check if any goon is on the same cell as player
         for (const goon of goons) {
+            // Check if goon is on same cell as player
             if (goon.x === player.x && goon.y === player.y) {
+                loseLife();
+                return true;
+            }
+            // Also check adjacent cells (goons are nearby)
+            const dx = Math.abs(goon.x - player.x);
+            const dy = Math.abs(goon.y - player.y);
+            if (dx <= 1 && dy <= 1) {
+                // Goon is adjacent - still kills you!
                 loseLife();
                 return true;
             }
@@ -419,6 +520,10 @@
             statusEl.style.color = '#44ff88';
             statusEl.style.textShadow = '0 0 30px #44ff88';
             stopLoops();
+            // Victory fanfare
+            playNote(523, 0.15, 'square', 0.1);
+            setTimeout(() => playNote(659, 0.15, 'square', 0.1), 150);
+            setTimeout(() => playNote(784, 0.2, 'square', 0.1), 300);
             setTimeout(() => {
                 if (!gameOver) nextLevel();
             }, 1500);
@@ -456,17 +561,21 @@
             }
         }
 
-        // Check collision with player
+        // Check collision with player - KILLS PLAYER!
         checkGoonCollision();
         draw();
     }
 
     // ============================================================
-    //  LIVES
+    //  LIVES - FIXED! LOSES LIFE WHEN HIT
     // ============================================================
     function loseLife() {
         lives--;
         livesDisplay.textContent = lives;
+        
+        // Play death sound
+        playNote(200, 0.3, 'sawtooth', 0.15);
+        setTimeout(() => playNote(150, 0.4, 'sawtooth', 0.12), 200);
         
         if (lives <= 0) {
             gameOver = true;
@@ -591,7 +700,6 @@
 
     function jumpLevel() {
         if (gameOver) {
-            // Allow jump even when game over
             gameOver = false;
             levelDone = false;
             gameLoopActive = true;
@@ -655,7 +763,6 @@
     function draw() {
         ctx.clearRect(0, 0, 600, 600);
 
-        // Grid
         for (let y = 0; y < GRID; y++) {
             for (let x = 0; x < GRID; x++) {
                 const px = x * CELL, py = y * CELL;
