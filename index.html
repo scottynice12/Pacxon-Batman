@@ -928,4 +928,174 @@
                 level = num - 1;
                 lives = 3;
                 stopLoops();
-                game
+                gameLoopActive = true;
+                gameOver = false;
+                levelDone = false;
+                cornerBonusActive = false;
+                nextLevel();
+            } else {
+                alert('Enter a number between 1 and ' + MAX_LEVELS);
+            }
+        }
+    }
+
+    // ============================================================
+    //  LOOPS
+    // ============================================================
+    function startLoops() {
+        stopLoops();
+        gameLoopActive = true;
+        moveInterval = setInterval(movePlayer, 100);
+        goonInterval = setInterval(moveGoons, goonSpeed);
+    }
+
+    function stopLoops() {
+        gameLoopActive = false;
+        if (moveInterval) clearInterval(moveInterval);
+        if (goonInterval) clearInterval(goonInterval);
+        moveInterval = null;
+        goonInterval = null;
+    }
+
+    // ============================================================
+    //  UI
+    // ============================================================
+    function updateUI() {
+        levelDisplay.textContent = level;
+        livesDisplay.textContent = lives;
+
+        let captured = 0;
+        for (let y = 0; y < GRID; y++)
+            for (let x = 0; x < GRID; x++)
+                if (grid[y][x] === CAPTURED) captured++;
+        const pct = Math.round((captured / (GRID * GRID)) * 100);
+        percentDisplay.textContent = Math.min(pct, 80);
+        percentDisplay.style.color = pct >= 80 ? '#44ff88' : '#ffdd44';
+    }
+
+    // ============================================================
+    //  DRAW
+    // ============================================================
+    function draw() {
+        ctx.clearRect(0, 0, 600, 600);
+
+        for (let y = 0; y < GRID; y++) {
+            for (let x = 0; x < GRID; x++) {
+                const px = x * CELL, py = y * CELL;
+                const state = grid[y][x];
+                ctx.fillStyle = state === EMPTY ? '#1a1a2e' :
+                                state === WALL ? '#4a4a7a' :
+                                state === CAPTURED ? '#2a2a5a' :
+                                '#6b0020';
+                ctx.fillRect(px, py, CELL - 1, CELL - 1);
+                ctx.strokeStyle = '#333355';
+                ctx.lineWidth = 0.5;
+                ctx.strokeRect(px, py, CELL, CELL);
+            }
+        }
+
+        // Highlight corners for bonus mechanic
+        const cornerColor = 'rgba(68, 255, 136, 0.15)';
+        ctx.fillStyle = cornerColor;
+        ctx.fillRect(0, 0, CELL*2, CELL*2);
+        ctx.fillRect(GRID*CELL - CELL*2, 0, CELL*2, CELL*2);
+        ctx.fillRect(0, GRID*CELL - CELL*2, CELL*2, CELL*2);
+        ctx.fillRect(GRID*CELL - CELL*2, GRID*CELL - CELL*2, CELL*2, CELL*2);
+
+        // Batman
+        const bx = player.x * CELL + CELL / 2;
+        const by = player.y * CELL + CELL / 2;
+        const r = CELL / 2 - 3;
+
+        const grad = ctx.createRadialGradient(bx, by, 0, bx, by, r + 10);
+        grad.addColorStop(0, 'rgba(240, 192, 64, 0.6)');
+        grad.addColorStop(1, 'rgba(240, 192, 64, 0)');
+        ctx.fillStyle = grad;
+        ctx.beginPath();
+        ctx.arc(bx, by, r + 10, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.beginPath();
+        ctx.arc(bx, by, r, 0, Math.PI * 2);
+        ctx.fillStyle = '#f0c040';
+        ctx.shadowColor = '#f0c040';
+        ctx.shadowBlur = 25;
+        ctx.fill();
+        ctx.shadowBlur = 0;
+        ctx.fillStyle = '#0a0a0a';
+        ctx.font = (CELL - 4) + 'px Arial';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('🦇', bx, by + 1);
+
+        // Goons
+        for (const goon of goons) {
+            const gx = goon.x * CELL + CELL / 2;
+            const gy = goon.y * CELL + CELL / 2;
+
+            const ggrad = ctx.createRadialGradient(gx, gy, 0, gx, gy, r + 8);
+            ggrad.addColorStop(0, 'rgba(139, 0, 139, 0.5)');
+            ggrad.addColorStop(1, 'rgba(139, 0, 139, 0)');
+            ctx.fillStyle = ggrad;
+            ctx.beginPath();
+            ctx.arc(gx, gy, r + 8, 0, Math.PI * 2);
+            ctx.fill();
+
+            ctx.beginPath();
+            ctx.arc(gx, gy, r, 0, Math.PI * 2);
+            ctx.fillStyle = '#8b008b';
+            ctx.shadowColor = '#ff00ff';
+            ctx.shadowBlur = 15;
+            ctx.fill();
+            ctx.shadowBlur = 0;
+            ctx.fillStyle = '#ffffff';
+            ctx.font = (CELL - 4) + 'px Arial';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText('🎭', gx, gy + 1);
+        }
+    }
+
+    // ============================================================
+    //  CONTROLS
+    // ============================================================
+    document.addEventListener('keydown', (e) => {
+        if (!gameStarted) return;
+        const key = e.key;
+        if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(key)) {
+            e.preventDefault();
+        }
+        let nd = null;
+        if (key === 'ArrowUp') nd = { dx: 0, dy: -1 };
+        else if (key === 'ArrowDown') nd = { dx: 0, dy: 1 };
+        else if (key === 'ArrowLeft') nd = { dx: -1, dy: 0 };
+        else if (key === 'ArrowRight') nd = { dx: 1, dy: 0 };
+        else if (key === 'r' || key === 'R') { resetGame(); return; }
+        if (nd && moveQueue.length < 3) moveQueue.push(nd);
+    });
+
+    // Touch controls
+    document.querySelectorAll('#touchControls button').forEach(btn => {
+        const handler = () => {
+            if (!gameStarted) return;
+            const dx = parseInt(btn.dataset.dx || '0');
+            const dy = parseInt(btn.dataset.dy || '0');
+            if (dx === 0 && dy === 0) return;
+            if (moveQueue.length < 3) moveQueue.push({ dx, dy });
+        };
+        btn.addEventListener('click', handler);
+        btn.addEventListener('touchstart', (e) => { e.preventDefault(); handler(); });
+    });
+
+    // Restart button in info panel
+    document.getElementById('restartBtn').addEventListener('click', resetGame);
+
+    // ============================================================
+    //  SHOW MENU ON LOAD
+    // ============================================================
+    gameStarted = false;
+    mainMenu.classList.remove('hidden');
+    draw();
+</script>
+</body>
+</html>
