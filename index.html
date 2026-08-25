@@ -911,5 +911,572 @@
         let captured = 0;
         for (let y = 0; y < GRID; y++) {
             for (let x = 0; x < GRID; x++) {
-                if ((grid[y][x] === EMPTY || grid[y][x] === POWERUP) && !reachable
-           
+                if ((grid[y][x] === EMPTY || grid[y][x] === POWERUP) && !reachableSet.has(x + ',' + y)) {
+                    if (grid[y][x] === POWERUP) {
+                        const idx = powerups.findIndex(p => p.x === x && p.y === y);
+                        if (idx !== -1) powerups.splice(idx, 1);
+                    }
+                    grid[y][x] = CAPTURED;
+                    captured++;
+                }
+            }
+        }
+        return captured;
+    }
+
+    // ============================================================
+    //  LOOP DETECTION
+    // ============================================================
+    function checkLoopClosure(x, y) {
+        let connections = 0;
+        const dirs = [[0,1],[0,-1],[1,0],[-1,0]];
+        for (const [dx, dy] of dirs) {
+            const nx = x + dx, ny = y + dy;
+            if (nx >= 0 && nx < GRID && ny >= 0 && ny < GRID) {
+                if (grid[ny][nx] === WALL) connections++;
+            }
+        }
+        if (connections >= 2) {
+            const captured = captureEnclosedArea();
+            if (captured > 0) {
+                checkCornerBonus();
+                return true;
+            }
+        }
+        return false;
+    }
+
+    // ============================================================
+    //  WALL DRAWING
+    // ============================================================
+    function drawWall(x1, y1, x2, y2) {
+        let captured = false;
+        if (x1 === x2) {
+            const yMin = Math.min(y1, y2), yMax = Math.max(y1, y2);
+            for (let y = yMin; y <= yMax; y++) {
+                if (grid[y][x1] === EMPTY) {
+                    grid[y][x1] = WALL;
+                    if (checkLoopClosure(x1, y)) captured = true;
+                }
+            }
+        } else if (y1 === y2) {
+            const xMin = Math.min(x1, x2), xMax = Math.max(x1, x2);
+            for (let x = xMin; x <= xMax; x++) {
+                if (grid[y1][x] === EMPTY) {
+                    grid[y1][x] = WALL;
+                    if (checkLoopClosure(x, y1)) captured = true;
+                }
+            }
+        }
+        return captured;
+    }
+
+    // ============================================================
+    //  PLAYER MOVEMENT - FASTER!
+    // ============================================================
+    function movePlayer() {
+        if (gameOver || levelDone || !gameLoopActive || !gameStarted || isPaused) return;
+
+        if (moveQueue.length > 0) {
+            const next = moveQueue.shift();
+            if (!(next.dx === -dir.dx && next.dy === -dir.dy)) {
+                dir = next;
+            }
+        }
+
+        if (dir.dx === 0 && dir.dy === 0) return;
+
+        const nx = player.x + dir.dx;
+        const ny = player.y + dir.dy;
+
+        if (nx < 0 || nx >= GRID || ny < 0 || ny >= GRID) return;
+        if (grid[ny][nx] === WALL || grid[ny][nx] === GOON) return;
+
+        prev.x = player.x;
+        prev.y = player.y;
+        player.x = nx;
+        player.y = ny;
+
+        if (grid[ny][nx] === POWERUP) {
+            collectPowerup(nx, ny);
+        }
+
+        if (grid[ny][nx] === EMPTY) {
+            const captured = drawWall(prev.x, prev.y, player.x, player.y);
+            if (captured) {
+                checkWin();
+            }
+        }
+
+        grid[ny][nx] = CAPTURED;
+        updateUI();
+        draw();
+        checkGoonCollision();
+    }
+
+    // ============================================================
+    //  GOON COLLISION
+    // ============================================================
+    function checkGoonCollision() {
+        for (const goon of goons) {
+            const dx = Math.abs(goon.x - player.x);
+            const dy = Math.abs(goon.y - player.y);
+            if (dx <= 1 && dy <= 1) {
+                loseLife();
+                return true;
+            }
+        }
+        return false;
+    }
+
+    // ============================================================
+    //  WIN CHECK
+    // ============================================================
+    function checkWin() {
+        let captured = 0;
+        for (let y = 0; y < GRID; y++)
+            for (let x = 0; x < GRID; x++)
+                if (grid[y][x] === CAPTURED) captured++;
+        const pct = Math.round((captured / (GRID * GRID)) * 100);
+
+        if (pct >= 80 && !levelDone) {
+            levelDone = true;
+            gameOver = true;
+            statusEl.textContent = '✅ Level ' + level + ' COMPLETE! 🦇';
+            statusEl.style.color = '#44ff88';
+            statusEl.style.textShadow = '0 0 30px #44ff88';
+            stopLoops();
+            if (level > maxUnlockedLevel) {
+                maxUnlockedLevel = level;
+            }
+            playNote(523, 0.12);
+            setTimeout(() => playNote(659, 0.12), 150);
+            setTimeout(() => playNote(784, 0.18), 300);
+            setTimeout(() => {
+                if (!gameOver) nextLevel();
+            }, 1500);
+        }
+        updateUI();
+    }
+
+    // ============================================================
+    //  GOON AI - FASTER!
+    // ============================================================
+    function moveGoons() {
+        if (gameOver || levelDone || !gameLoopActive || !gameStarted || isPaused) return;
+
+        const dirs = [[0,1],[0,-1],[1,0],[-1,0]];
+        for (const goon of goons) {
+            const shuffled = [...dirs];
+            for (let i = shuffled.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+            }
+            let moved = false;
+            for (const [dx, dy] of shuffled) {
+                const nx = goon.x + dx;
+                const ny = goon.y + dy;
+                if (nx >= 0 && nx < GRID && ny >= 0 && ny < GRID) {
+                    if (grid[ny][nx] !== WALL && grid[ny][nx] !== CAPTURED && grid[ny][nx] !== GOON && grid[ny][nx] !== POWERUP) {
+                        grid[goon.y][goon.x] = EMPTY;
+                        goon.x = nx;
+                        goon.y = ny;
+                        grid[ny][nx] = GOON;
+                        moved = true;
+                        break;
+                    }
+                }
+            }
+        }
+
+        checkGoonCollision();
+        draw();
+    }
+
+    // ============================================================
+    //  LIVES
+    // ============================================================
+    function loseLife() {
+        lives--;
+        livesDisplay.textContent = lives;
+        
+        playNote(200, 0.3, 'sawtooth', 0.15);
+        setTimeout(() => playNote(150, 0.4, 'sawtooth', 0.12), 200);
+        
+        if (lives <= 0) {
+            gameOver = true;
+            statusEl.textContent = '💀 GAME OVER - Joker Wins! 💀';
+            statusEl.style.color = '#ff0000';
+            statusEl.style.textShadow = '0 0 30px #ff0000';
+            stopLoops();
+            draw();
+            return;
+        }
+
+        statusEl.textContent = '💔 Lost a life! ' + lives + ' remaining';
+        statusEl.style.color = '#ff6644';
+        statusEl.style.textShadow = '0 0 20px #ff6644';
+
+        player.x = 10;
+        player.y = 10;
+        prev.x = 10;
+        prev.y = 10;
+        dir = { dx: 0, dy: 0 };
+        moveQueue = [];
+        cornerBonusActive = false;
+        powerupActive = false;
+        
+        for (const g of goons) {
+            if (g.x >= 0 && g.x < GRID && g.y >= 0 && g.y < GRID) {
+                grid[g.y][g.x] = EMPTY;
+            }
+        }
+        
+        spawnGoons(goonCount);
+        grid[player.y][player.x] = CAPTURED;
+
+        updateUI();
+        draw();
+        
+        if (!gameOver && !levelDone) {
+            startLoops();
+        }
+    }
+
+    // ============================================================
+    //  LEVEL MANAGEMENT
+    // ============================================================
+    function initGame() {
+        level = 1;
+        lives = 3;
+        gameOver = false;
+        levelDone = false;
+        player.x = 10;
+        player.y = 10;
+        prev.x = 10;
+        prev.y = 10;
+        dir = { dx: 0, dy: 0 };
+        moveQueue = [];
+        gameLoopActive = true;
+        cornerBonusActive = false;
+        powerupActive = false;
+        maxUnlockedLevel = Math.max(maxUnlockedLevel, 1);
+        isPaused = false;
+        pauseOverlay.classList.remove('active');
+
+        stopLoops();
+        const config = getConfig(level);
+        goonCount = config.goons;
+        goonSpeed = config.speed;
+
+        grid = makeGrid();
+        grid[player.y][player.x] = CAPTURED;
+        spawnGoons(goonCount);
+        spawnPowerups();
+
+        statusEl.textContent = '⬆️⬇️⬅️➡️ Draw walls & trap the Joker Goons!';
+        statusEl.style.color = '#ffdd44';
+        statusEl.style.textShadow = '0 0 15px #ffdd44';
+        updateUI();
+        draw();
+        startLoops();
+    }
+
+    function resetGame() {
+        if (!gameStarted) {
+            startGame();
+            return;
+        }
+        if (isPaused) {
+            isPaused = false;
+            pauseOverlay.classList.remove('active');
+            document.querySelector('.pause-btn').textContent = '⏸️ Pause';
+        }
+        stopLoops();
+        gameOver = false;
+        levelDone = false;
+        gameLoopActive = true;
+        lives = 3;
+        player.x = 10;
+        player.y = 10;
+        prev.x = 10;
+        prev.y = 10;
+        dir = { dx: 0, dy: 0 };
+        moveQueue = [];
+        cornerBonusActive = false;
+        powerupActive = false;
+        
+        const config = getConfig(level);
+        goonCount = config.goons;
+        goonSpeed = config.speed;
+
+        grid = makeGrid();
+        grid[player.y][player.x] = CAPTURED;
+        spawnGoons(goonCount);
+        spawnPowerups();
+
+        statusEl.textContent = '⬆️⬇️⬅️➡️ Draw walls & trap the Joker Goons!';
+        statusEl.style.color = '#ffdd44';
+        statusEl.style.textShadow = '0 0 15px #ffdd44';
+        updateUI();
+        draw();
+        startLoops();
+    }
+
+    function nextLevel() {
+        if (level >= MAX_LEVELS) {
+            statusEl.textContent = '🏆 YOU BEAT ALL 60 LEVELS! BATMAN WINS! 🏆';
+            statusEl.style.color = '#ffdd44';
+            statusEl.style.textShadow = '0 0 30px #ffdd44';
+            gameOver = true;
+            levelDone = false;
+            gameLoopActive = false;
+            stopLoops();
+            draw();
+            return;
+        }
+
+        level++;
+        if (level > maxUnlockedLevel) {
+            maxUnlockedLevel = level;
+        }
+        gameOver = false;
+        levelDone = false;
+        lives = 3;
+        player.x = 10;
+        player.y = 10;
+        prev.x = 10;
+        prev.y = 10;
+        dir = { dx: 0, dy: 0 };
+        moveQueue = [];
+        gameLoopActive = true;
+        cornerBonusActive = false;
+        powerupActive = false;
+        isPaused = false;
+        pauseOverlay.classList.remove('active');
+
+        const config = getConfig(level);
+        goonCount = config.goons;
+        goonSpeed = config.speed;
+
+        grid = makeGrid();
+        grid[player.y][player.x] = CAPTURED;
+        spawnGoons(goonCount);
+        spawnPowerups();
+
+        statusEl.textContent = '🦇 Level ' + level + ' - ' + goonCount + ' Joker Goons!';
+        statusEl.style.color = '#ffdd44';
+        statusEl.style.textShadow = '0 0 20px #ffdd44';
+        updateUI();
+        draw();
+        startLoops();
+    }
+
+    function jumpToLevel(targetLevel) {
+        if (targetLevel > maxUnlockedLevel) {
+            alert('You haven\'t unlocked level ' + targetLevel + ' yet!');
+            return;
+        }
+        level = targetLevel - 1;
+        lives = 3;
+        stopLoops();
+        gameLoopActive = true;
+        gameOver = false;
+        levelDone = false;
+        cornerBonusActive = false;
+        powerupActive = false;
+        isPaused = false;
+        pauseOverlay.classList.remove('active');
+        if (!gameStarted) {
+            startGame();
+        } else {
+            nextLevel();
+        }
+        closeLevelSelect();
+    }
+
+    // ============================================================
+    //  LOOPS - FASTER PLAYER (50ms instead of 100ms)
+    // ============================================================
+    function startLoops() {
+        stopLoops();
+        gameLoopActive = true;
+        moveInterval = setInterval(movePlayer, 50); // FASTER - was 100
+        goonInterval = setInterval(moveGoons, goonSpeed);
+    }
+
+    function stopLoops() {
+        gameLoopActive = false;
+        if (moveInterval) clearInterval(moveInterval);
+        if (goonInterval) clearInterval(goonInterval);
+        moveInterval = null;
+        goonInterval = null;
+    }
+
+    // ============================================================
+    //  UI
+    // ============================================================
+    function updateUI() {
+        levelDisplay.textContent = level;
+        livesDisplay.textContent = lives;
+
+        let captured = 0;
+        for (let y = 0; y < GRID; y++)
+            for (let x = 0; x < GRID; x++)
+                if (grid[y][x] === CAPTURED) captured++;
+        const pct = Math.round((captured / (GRID * GRID)) * 100);
+        percentDisplay.textContent = Math.min(pct, 80);
+        percentDisplay.style.color = pct >= 80 ? '#44ff88' : '#ffdd44';
+    }
+
+    // ============================================================
+    //  DRAW
+    // ============================================================
+    function draw() {
+        ctx.clearRect(0, 0, 600, 600);
+
+        for (let y = 0; y < GRID; y++) {
+            for (let x = 0; x < GRID; x++) {
+                const px = x * CELL, py = y * CELL;
+                const state = grid[y][x];
+                let color = '#1a1a2e';
+                if (state === WALL) color = '#4a4a7a';
+                else if (state === CAPTURED) color = '#2a2a5a';
+                else if (state === GOON) color = '#6b0020';
+                else if (state === POWERUP) color = '#ff00ff';
+                ctx.fillStyle = color;
+                ctx.fillRect(px, py, CELL - 1, CELL - 1);
+                ctx.strokeStyle = '#333355';
+                ctx.lineWidth = 0.5;
+                ctx.strokeRect(px, py, CELL, CELL);
+                
+                if (state === POWERUP) {
+                    ctx.fillStyle = '#ffffff';
+                    ctx.font = (CELL - 6) + 'px Arial';
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'middle';
+                    ctx.fillText('⭐', px + CELL/2, py + CELL/2 + 1);
+                }
+            }
+        }
+
+        // Highlight corners
+        const cornerColor = 'rgba(68, 255, 136, 0.12)';
+        ctx.fillStyle = cornerColor;
+        ctx.fillRect(0, 0, CELL*3, CELL*3);
+        ctx.fillRect(GRID*CELL - CELL*3, 0, CELL*3, CELL*3);
+        ctx.fillRect(0, GRID*CELL - CELL*3, CELL*3, CELL*3);
+        ctx.fillRect(GRID*CELL - CELL*3, GRID*CELL - CELL*3, CELL*3, CELL*3);
+
+        // Batman
+        const bx = player.x * CELL + CELL / 2;
+        const by = player.y * CELL + CELL / 2;
+        const r = CELL / 2 - 3;
+
+        const grad = ctx.createRadialGradient(bx, by, 0, bx, by, r + 10);
+        grad.addColorStop(0, 'rgba(240, 192, 64, 0.6)');
+        grad.addColorStop(1, 'rgba(240, 192, 64, 0)');
+        ctx.fillStyle = grad;
+        ctx.beginPath();
+        ctx.arc(bx, by, r + 10, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.beginPath();
+        ctx.arc(bx, by, r, 0, Math.PI * 2);
+        ctx.fillStyle = '#f0c040';
+        ctx.shadowColor = '#f0c040';
+        ctx.shadowBlur = 25;
+        ctx.fill();
+        ctx.shadowBlur = 0;
+        ctx.fillStyle = '#0a0a0a';
+        ctx.font = (CELL - 4) + 'px Arial';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('🦇', bx, by + 1);
+
+        // Goons
+        for (const goon of goons) {
+            const gx = goon.x * CELL + CELL / 2;
+            const gy = goon.y * CELL + CELL / 2;
+
+            const ggrad = ctx.createRadialGradient(gx, gy, 0, gx, gy, r + 8);
+            ggrad.addColorStop(0, 'rgba(139, 0, 139, 0.5)');
+            ggrad.addColorStop(1, 'rgba(139, 0, 139, 0)');
+            ctx.fillStyle = ggrad;
+            ctx.beginPath();
+            ctx.arc(gx, gy, r + 8, 0, Math.PI * 2);
+            ctx.fill();
+
+            ctx.beginPath();
+            ctx.arc(gx, gy, r, 0, Math.PI * 2);
+            ctx.fillStyle = '#8b008b';
+            ctx.shadowColor = '#ff00ff';
+            ctx.shadowBlur = 15;
+            ctx.fill();
+            ctx.shadowBlur = 0;
+            ctx.fillStyle = '#ffffff';
+            ctx.font = (CELL - 4) + 'px Arial';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText('🎭', gx, gy + 1);
+        }
+    }
+
+    // ============================================================
+    //  CONTROLS
+    // ============================================================
+    document.addEventListener('keydown', (e) => {
+        if (!gameStarted) return;
+        const key = e.key;
+        if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(key)) {
+            e.preventDefault();
+        }
+        let nd = null;
+        if (key === 'ArrowUp') nd = { dx: 0, dy: -1 };
+        else if (key === 'ArrowDown') nd = { dx: 0, dy: 1 };
+        else if (key === 'ArrowLeft') nd = { dx: -1, dy: 0 };
+        else if (key === 'ArrowRight') nd = { dx: 1, dy: 0 };
+        else if (key === 'r' || key === 'R') { resetGame(); return; }
+        else if (key === 'p' || key === 'P') { togglePause(); return; }
+        else if (key === 'Escape') { 
+            if (isPaused) { resumeGame(); } 
+            else if (!gameOver && !levelDone) { togglePause(); }
+            return;
+        }
+        if (nd && moveQueue.length < 5) moveQueue.push(nd);
+    });
+
+    document.querySelectorAll('#touchControls button').forEach(btn => {
+        const handler = () => {
+            if (!gameStarted) return;
+            const dx = parseInt(btn.dataset.dx || '0');
+            const dy = parseInt(btn.dataset.dy || '0');
+            if (dx === 0 && dy === 0) return;
+            if (moveQueue.length < 5) moveQueue.push({ dx, dy });
+        };
+        btn.addEventListener('click', handler);
+        btn.addEventListener('touchstart', (e) => { e.preventDefault(); handler(); });
+    });
+
+    document.getElementById('restartBtn').addEventListener('click', resetGame);
+    document.querySelector('.controls button:first-child').onclick = showLevelSelect;
+
+    // Keyboard shortcut for pause
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'p' || e.key === 'P' || e.key === 'Escape') {
+            if (gameStarted && !gameOver && !levelDone) {
+                // handled above
+            }
+        }
+    });
+
+    // ============================================================
+    //  SHOW MENU ON LOAD
+    // ============================================================
+    gameStarted = false;
+    mainMenu.classList.remove('hidden');
+    maxUnlockedLevel = 1;
+    draw();
+</script>
+</body>
+</html>
