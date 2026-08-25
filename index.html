@@ -1,9 +1,9 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>BatXon: Gotham Realms - 60 Levels</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BatXon: Gotham Realms</title>
     <style>
         * {
             margin: 0;
@@ -17,75 +17,70 @@
             align-items: center;
             min-height: 100vh;
             font-family: 'Arial Black', sans-serif;
-            user-select: none;
             overflow: hidden;
         }
         .game-wrapper {
             background: linear-gradient(145deg, #1a1a2e, #16213e);
-            padding: 25px;
+            padding: 20px;
             border-radius: 20px;
-            box-shadow: 0 0 50px rgba(255, 215, 0, 0.2), inset 0 0 30px rgba(0, 0, 0, 0.8);
+            box-shadow: 0 0 50px rgba(255, 215, 0, 0.2);
             border: 2px solid #f0c040;
-            max-width: 700px;
+            max-width: 650px;
             width: 100%;
         }
-        .bat-logo {
+        .header {
             color: #f0c040;
-            font-size: 24px;
+            font-size: 22px;
             text-align: center;
-            margin-bottom: 8px;
+            margin-bottom: 10px;
             text-shadow: 0 0 20px #f0c040;
+            letter-spacing: 2px;
         }
         canvas {
             display: block;
             margin: 0 auto;
             background: #1a1a2e;
             border-radius: 10px;
-            box-shadow: inset 0 0 30px #000;
             width: 100%;
             max-width: 600px;
             height: auto;
             aspect-ratio: 1/1;
+            border: 2px solid #333355;
             touch-action: none;
-            cursor: none;
         }
-        .info-panel {
+        .info {
             display: grid;
-            grid-template-columns: repeat(5, 1fr);
-            gap: 6px;
-            margin: 12px 0 8px 0;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 8px;
+            margin: 12px 0 8px;
             color: #f0c040;
             font-size: 14px;
-            text-shadow: 0 0 10px #f0c040;
         }
-        .info-panel div {
-            background: rgba(0, 0, 0, 0.6);
-            padding: 6px 4px;
-            border-radius: 20px;
+        .info div {
+            background: rgba(0,0,0,0.5);
+            padding: 8px;
+            border-radius: 12px;
             border: 1px solid #f0c040;
             text-align: center;
-            font-size: 13px;
         }
-        .info-panel .highlight {
-            background: rgba(240, 192, 64, 0.25);
+        .info .highlight {
+            background: rgba(240, 192, 64, 0.2);
             border-color: #ffdd44;
             color: #ffdd44;
-            font-size: 16px;
+            font-size: 18px;
             font-weight: bold;
         }
-        .info-panel .lives {
-            color: #ff4444;
+        .info .lives {
             border-color: #ff4444;
-            font-size: 16px;
+            color: #ff4444;
         }
-        #status-msg {
+        #status {
             color: #ffdd44;
-            font-size: 18px;
-            min-height: 32px;
             text-align: center;
-            margin: 6px 0;
-            text-shadow: 0 0 20px #ffdd44;
-            font-weight: normal;
+            font-size: 16px;
+            min-height: 30px;
+            margin: 8px 0;
+            text-shadow: 0 0 15px #ffdd44;
         }
         .controls {
             display: flex;
@@ -94,85 +89,85 @@
             margin-top: 10px;
             flex-wrap: wrap;
         }
-        button {
+        .controls button {
             background: #f0c040;
             color: #0a0a0a;
             border: none;
-            padding: 8px 20px;
-            border-radius: 30px;
+            padding: 8px 18px;
+            border-radius: 25px;
             font-weight: bold;
-            font-size: 14px;
+            font-size: 13px;
             cursor: pointer;
             transition: 0.3s;
-            box-shadow: 0 0 20px rgba(240, 192, 64, 0.3);
             font-family: 'Arial Black', sans-serif;
         }
-        button:hover {
+        .controls button:hover {
             transform: scale(1.05);
-            box-shadow: 0 0 40px rgba(240, 192, 64, 0.6);
+            box-shadow: 0 0 30px rgba(240, 192, 64, 0.5);
         }
-        .mobile-arrows {
+        .controls button.danger {
+            background: #ff4444;
+            color: white;
+            box-shadow: 0 0 20px rgba(255, 68, 68, 0.3);
+        }
+        .controls button.danger:hover {
+            box-shadow: 0 0 40px rgba(255, 68, 68, 0.6);
+        }
+        .touch-controls {
             display: none;
             grid-template-columns: repeat(3, 55px);
             grid-template-rows: repeat(3, 55px);
-            gap: 4px;
+            gap: 5px;
             justify-content: center;
             margin-top: 10px;
         }
-        .mobile-arrows button {
-            padding: 0;
-            font-size: 24px;
+        .touch-controls button {
             background: rgba(240, 192, 64, 0.15);
             border: 2px solid #f0c040;
             color: #f0c040;
             border-radius: 12px;
-            box-shadow: 0 0 15px rgba(240, 192, 64, 0.1);
-            width: 100%;
-            height: 100%;
-            min-height: 45px;
+            font-size: 24px;
+            cursor: pointer;
+            transition: 0.1s;
         }
-        .mobile-arrows button:active {
+        .touch-controls button:active {
             background: rgba(240, 192, 64, 0.4);
             transform: scale(0.92);
         }
-        .mobile-arrows .empty { visibility: hidden; }
+        .touch-controls .empty { visibility: hidden; }
         
-        @media (max-width: 600px) {
-            .info-panel { font-size: 11px; grid-template-columns: repeat(3, 1fr); }
-            .info-panel .highlight { font-size: 13px; }
-            .bat-logo { font-size: 18px; }
-            #status-msg { font-size: 15px; }
-            .controls button { padding: 6px 14px; font-size: 12px; }
-            .mobile-arrows { display: grid; }
-        }
         @media (pointer: coarse) {
-            .mobile-arrows { display: grid; }
+            .touch-controls { display: grid; }
+        }
+        @media (max-width: 500px) {
+            .info { font-size: 11px; }
+            .header { font-size: 16px; }
+            .touch-controls { display: grid; }
         }
     </style>
 </head>
 <body>
 
 <div class="game-wrapper">
-    <div class="bat-logo">🦇 BATXON: GOTHAM REALMS 🦇</div>
+    <div class="header">🦇 BATXON: GOTHAM REALMS 🦇</div>
     
     <canvas id="gameCanvas" width="600" height="600"></canvas>
     
-    <div class="info-panel">
+    <div class="info">
         <div>🏆 Level <span id="levelDisplay">1</span>/60</div>
-        <div class="highlight">📊 <span id="percentDisplay">0</span>/80%</div>
+        <div class="highlight">📊 <span id="percentDisplay">0</span>%</div>
         <div class="lives">❤️ <span id="livesDisplay">3</span></div>
-        <div>🤡 <span id="goonCount">3</span></div>
-        <div>⚡ <span id="speedDisplay">500</span>ms</div>
+        <div>🤡 <span id="goonDisplay">3</span></div>
     </div>
     
-    <div id="status-msg">⬆️⬇️⬅️➡️ Draw walls to trap the Joker Goons!</div>
+    <div id="status">⬆️⬇️⬅️➡️ Draw walls & trap the Joker Goons!</div>
     
     <div class="controls">
-        <button id="restartBtn">🔄 New Game</button>
-        <button id="levelBtn">📋 Jump Level</button>
+        <button id="restartBtn" onclick="initGame()">🔄 New Game</button>
+        <button onclick="jumpLevel()">📋 Jump Level</button>
     </div>
     
-    <div class="mobile-arrows" id="mobileControls">
+    <div class="touch-controls" id="touchControls">
         <div class="empty"></div>
         <button data-dx="0" data-dy="-1">⬆️</button>
         <div class="empty"></div>
@@ -187,90 +182,81 @@
 
 <script>
     // ============================================================
-    //  BATXON: GOTHAM REALMS - PROPER LOOP CAPTURE
-    //  You ONLY capture when you close a loop!
+    //  BATXON: GOTHAM REALMS - FINAL VERSION
+    //  Fixed restart, proper goon collision, full playability
     // ============================================================
 
+    // --- Canvas Setup ---
     const canvas = document.getElementById('gameCanvas');
     const ctx = canvas.getContext('2d');
-    
-    const GRID_SIZE = 20;
-    const CELL_SIZE = 600 / GRID_SIZE;
+    const GRID = 20;
+    const CELL = 600 / GRID;
     const MAX_LEVELS = 60;
-    
-    // Cell states
-    const EMPTY = 0;
-    const WALL = 1;
-    const CAPTURED = 2;
-    const GOON = 3;
-    
-    // Game state
+
+    // --- Cell States ---
+    const EMPTY = 0, WALL = 1, CAPTURED = 2, GOON = 3;
+
+    // --- Game State ---
     let grid = [];
-    let playerX = 10, playerY = 10;
-    let prevX = 10, prevY = 10;
+    let player = { x: 10, y: 10 };
+    let prev = { x: 10, y: 10 };
     let goons = [];
     let level = 1;
     let goonCount = 3;
     let goonSpeed = 500;
-    let gameOver = false;
-    let levelComplete = false;
     let lives = 3;
-    let maxLives = 3;
-    let gameLoopInterval = null;
-    let gameSpeed = 100;
-    let moveTimer = null;
-    let direction = { dx: 0, dy: 0 };
+    let gameOver = false;
+    let levelDone = false;
     let moveQueue = [];
-    let isMoving = false;
-    
-    // Track wall segments to detect loop closure
-    let wallSegments = [];
-    
-    // DOM elements
+    let dir = { dx: 0, dy: 0 };
+    let moveInterval = null;
+    let goonInterval = null;
+    let gameLoopActive = false;
+
+    // --- DOM Refs ---
     const levelDisplay = document.getElementById('levelDisplay');
     const percentDisplay = document.getElementById('percentDisplay');
     const livesDisplay = document.getElementById('livesDisplay');
-    const goonCountDisplay = document.getElementById('goonCount');
-    const speedDisplay = document.getElementById('speedDisplay');
-    const statusMsg = document.getElementById('status-msg');
-    
+    const goonDisplay = document.getElementById('goonDisplay');
+    const statusEl = document.getElementById('status');
+    const restartBtn = document.getElementById('restartBtn');
+
     // ============================================================
-    //  LEVEL CONFIGURATION
+    //  LEVEL CONFIG
     // ============================================================
-    function getLevelConfig(lvl) {
-        const goons = Math.min(3 + Math.floor((lvl - 1) / 4), 15);
-        const speed = Math.max(150, 500 - (lvl - 1) * 5);
-        return { goons, speed };
+    function getConfig(lvl) {
+        const g = Math.min(3 + Math.floor((lvl - 1) / 4), 15);
+        const s = Math.max(150, 500 - (lvl - 1) * 5);
+        return { goons: g, speed: s };
     }
-    
+
     // ============================================================
-    //  GRID FUNCTIONS
+    //  GRID
     // ============================================================
-    function createGrid() {
-        return Array.from({ length: GRID_SIZE }, () => 
-            Array(GRID_SIZE).fill(EMPTY)
-        );
+    function makeGrid() {
+        return Array.from({ length: GRID }, () => Array(GRID).fill(EMPTY));
     }
-    
+
     function spawnGoons(count) {
         goons = [];
         for (let i = 0; i < count; i++) {
             let attempts = 0;
             let placed = false;
-            while (attempts < 300 && !placed) {
-                const gx = Math.floor(Math.random() * GRID_SIZE);
-                const gy = Math.floor(Math.random() * GRID_SIZE);
-                if (grid[gy][gx] === EMPTY && !(gx === playerX && gy === playerY)) {
-                    grid[gy][gx] = GOON;
-                    goons.push({ x: gx, y: gy });
+            while (attempts < 500 && !placed) {
+                const x = Math.floor(Math.random() * GRID);
+                const y = Math.floor(Math.random() * GRID);
+                if (grid[y][x] === EMPTY && !(x === player.x && y === player.y)) {
+                    grid[y][x] = GOON;
+                    goons.push({ x, y });
                     placed = true;
                 }
                 attempts++;
             }
+            // Fallback: place anywhere
             if (!placed) {
-                for (let y = 0; y < GRID_SIZE && !placed; y++) {
-                    for (let x = 0; x < GRID_SIZE && !placed; x++) {
-                        if (grid[y][x] === EMPTY && !(x === playerX && y === playerY)) {
+                for (let y = 0; y < GRID && !placed; y++) {
+                    for (let x = 0; x < GRID && !placed; x++) {
+                        if (grid[y][x] === EMPTY && !(x === player.x && y === player.y)) {
                             grid[y][x] = GOON;
                             goons.push({ x, y });
                             placed = true;
@@ -280,277 +266,184 @@
             }
         }
     }
-    
+
     // ============================================================
-    //  PROPER LOOP DETECTION - THE FIX!
+    //  REACHABLE CELLS (BFS)
     // ============================================================
-    
-    // Check if a new wall segment closes a loop
-    function checkLoopClosure(x, y) {
-        // A loop is closed when a wall segment connects to existing walls
-        // AND the player is now trapped in an enclosed area
-        
-        // First, check if this wall segment connects to existing walls
-        let connections = 0;
-        const dirs = [[0,1],[0,-1],[1,0],[-1,0]];
-        for (const [dx, dy] of dirs) {
-            const nx = x + dx;
-            const ny = y + dy;
-            if (nx >= 0 && nx < GRID_SIZE && ny >= 0 && ny < GRID_SIZE) {
-                if (grid[ny][nx] === WALL) connections++;
-            }
-        }
-        
-        // If it connects to at least 2 walls, it might close a loop
-        if (connections >= 2) {
-            // Check if the player is now in a closed area
-            return detectEnclosedArea();
-        }
-        
-        return false;
-    }
-    
-    // Detect if the player is in an enclosed area
-    function detectEnclosedArea() {
-        // Find all cells reachable from player
-        const reachable = getReachableCells(playerX, playerY);
-        const reachableSet = new Set(reachable.map(([x, y]) => `${x},${y}`));
-        
-        // Find all empty cells NOT reachable from player
-        let enclosedCells = [];
-        for (let y = 0; y < GRID_SIZE; y++) {
-            for (let x = 0; x < GRID_SIZE; x++) {
-                if (grid[y][x] === EMPTY && !reachableSet.has(`${x},${y}`)) {
-                    enclosedCells.push([x, y]);
-                }
-            }
-        }
-        
-        // If there are enclosed cells, capture them!
-        if (enclosedCells.length > 0) {
-            return enclosedCells;
-        }
-        
-        return null;
-    }
-    
-    function getReachableCells(startX, startY) {
+    function getReachable(sx, sy) {
         const visited = new Set();
-        const queue = [{ x: startX, y: startY }];
+        const queue = [{ x: sx, y: sy }];
         const result = [];
-        
-        while (queue.length > 0) {
+        while (queue.length) {
             const { x, y } = queue.shift();
-            const key = `${x},${y}`;
+            const key = x + ',' + y;
             if (visited.has(key)) continue;
-            if (x < 0 || x >= GRID_SIZE || y < 0 || y >= GRID_SIZE) continue;
+            if (x < 0 || x >= GRID || y < 0 || y >= GRID) continue;
             if (grid[y][x] === WALL || grid[y][x] === GOON) continue;
-            
             visited.add(key);
             result.push([x, y]);
-            
             const dirs = [[0,1],[0,-1],[1,0],[-1,0]];
             for (const [dx, dy] of dirs) {
                 const nx = x + dx, ny = y + dy;
-                if (!visited.has(`${nx},${ny}`)) {
-                    queue.push({ x: nx, y: ny });
+                if (!visited.has(nx + ',' + ny)) queue.push({ x: nx, y: ny });
+            }
+        }
+        return result;
+    }
+
+    // ============================================================
+    //  LOOP DETECTION & CAPTURE
+    // ============================================================
+    function detectAndCapture() {
+        const reachable = getReachable(player.x, player.y);
+        const reachableSet = new Set(reachable.map(([x, y]) => x + ',' + y));
+        let captured = 0;
+        for (let y = 0; y < GRID; y++) {
+            for (let x = 0; x < GRID; x++) {
+                if (grid[y][x] === EMPTY && !reachableSet.has(x + ',' + y)) {
+                    grid[y][x] = CAPTURED;
+                    captured++;
                 }
             }
         }
-        
-        return result;
+        return captured > 0;
     }
-    
+
+    function checkLoopClosure(x, y) {
+        let connections = 0;
+        const dirs = [[0,1],[0,-1],[1,0],[-1,0]];
+        for (const [dx, dy] of dirs) {
+            const nx = x + dx, ny = y + dy;
+            if (nx >= 0 && nx < GRID && ny >= 0 && ny < GRID) {
+                if (grid[ny][nx] === WALL) connections++;
+            }
+        }
+        if (connections >= 2) {
+            return detectAndCapture();
+        }
+        return false;
+    }
+
     // ============================================================
-    //  WALL DRAWING WITH LOOP DETECTION
+    //  WALL DRAWING
     // ============================================================
-    function drawWallBetween(x1, y1, x2, y2) {
-        let wallsDrawn = [];
-        let captured = 0;
-        let loopClosed = false;
-        
+    function drawWall(x1, y1, x2, y2) {
+        let captured = false;
         if (x1 === x2) {
-            const yMin = Math.min(y1, y2);
-            const yMax = Math.max(y1, y2);
+            const yMin = Math.min(y1, y2), yMax = Math.max(y1, y2);
             for (let y = yMin; y <= yMax; y++) {
                 if (grid[y][x1] === EMPTY) {
                     grid[y][x1] = WALL;
-                    wallsDrawn.push({ x: x1, y: y });
-                    
-                    // Check if this wall closes a loop
-                    const enclosed = checkLoopClosure(x1, y);
-                    if (enclosed) {
-                        loopClosed = true;
-                        // Capture the enclosed cells
-                        for (const [cx, cy] of enclosed) {
-                            if (grid[cy][cx] === EMPTY) {
-                                grid[cy][cx] = CAPTURED;
-                                captured++;
-                            }
-                        }
-                    }
+                    if (checkLoopClosure(x1, y)) captured = true;
                 }
             }
         } else if (y1 === y2) {
-            const xMin = Math.min(x1, x2);
-            const xMax = Math.max(x1, x2);
+            const xMin = Math.min(x1, x2), xMax = Math.max(x1, x2);
             for (let x = xMin; x <= xMax; x++) {
                 if (grid[y1][x] === EMPTY) {
                     grid[y1][x] = WALL;
-                    wallsDrawn.push({ x, y: y1 });
-                    
-                    // Check if this wall closes a loop
-                    const enclosed = checkLoopClosure(x, y1);
-                    if (enclosed) {
-                        loopClosed = true;
-                        for (const [cx, cy] of enclosed) {
-                            if (grid[cy][cx] === EMPTY) {
-                                grid[cy][cx] = CAPTURED;
-                                captured++;
-                            }
-                        }
-                    }
+                    if (checkLoopClosure(x, y1)) captured = true;
                 }
             }
         }
-        
-        return captured > 0;
+        return captured;
     }
-    
+
     // ============================================================
-    //  SNAKE-STYLE MOVEMENT
+    //  PLAYER MOVEMENT (Snake-style)
     // ============================================================
     function movePlayer() {
-        if (gameOver || levelComplete || !isMoving) return;
-        
-        // Get the next direction from queue
+        if (gameOver || levelDone || !gameLoopActive) return;
+
         if (moveQueue.length > 0) {
-            const nextDir = moveQueue.shift();
-            // Can't reverse direction (Snake rule)
-            if (!(nextDir.dx === -direction.dx && nextDir.dy === -direction.dy)) {
-                direction = nextDir;
+            const next = moveQueue.shift();
+            if (!(next.dx === -dir.dx && next.dy === -dir.dy)) {
+                dir = next;
             }
         }
-        
-        const dx = direction.dx;
-        const dy = direction.dy;
-        
-        if (dx === 0 && dy === 0) return;
-        
-        const newX = playerX + dx;
-        const newY = playerY + dy;
-        
-        // Boundary check
-        if (newX < 0 || newX >= GRID_SIZE || newY < 0 || newY >= GRID_SIZE) {
-            return;
+
+        if (dir.dx === 0 && dir.dy === 0) return;
+
+        const nx = player.x + dir.dx;
+        const ny = player.y + dir.dy;
+
+        if (nx < 0 || nx >= GRID || ny < 0 || ny >= GRID) return;
+        if (grid[ny][nx] === WALL || grid[ny][nx] === GOON) return;
+
+        prev.x = player.x;
+        prev.y = player.y;
+        player.x = nx;
+        player.y = ny;
+
+        if (grid[ny][nx] === EMPTY) {
+            const captured = drawWall(prev.x, prev.y, player.x, player.y);
+            if (captured) checkWin();
         }
-        
-        // Can't move into wall or goon
-        if (grid[newY][newX] === WALL || grid[newY][newX] === GOON) {
-            return;
-        }
-        
-        // Store previous position
-        prevX = playerX;
-        prevY = playerY;
-        
-        // Move player
-        playerX = newX;
-        playerY = newY;
-        
-        // Draw wall behind
-        let captured = false;
-        if (grid[playerY][playerX] === EMPTY) {
-            captured = drawWallBetween(prevX, prevY, playerX, playerY);
-        }
-        
-        // Mark current position as captured
-        grid[playerY][playerX] = CAPTURED;
-        
-        if (captured) {
-            checkWinCondition();
-        }
-        
-        updateDisplay();
+
+        grid[ny][nx] = CAPTURED;
+        updateUI();
         draw();
-    }
-    
-    // ============================================================
-    //  SNAKE GAME LOOP
-    // ============================================================
-    function startSnakeLoop() {
-        if (moveTimer) {
-            clearInterval(moveTimer);
-            moveTimer = null;
-        }
         
-        isMoving = true;
-        moveTimer = setInterval(() => {
-            movePlayer();
-        }, gameSpeed);
+        // Check if player is on a goon (shouldn't happen, but safety)
+        checkGoonCollision();
     }
-    
-    function stopSnakeLoop() {
-        isMoving = false;
-        if (moveTimer) {
-            clearInterval(moveTimer);
-            moveTimer = null;
+
+    // ============================================================
+    //  GOON COLLISION CHECK
+    // ============================================================
+    function checkGoonCollision() {
+        // Check if any goon is on the same cell as player
+        for (const goon of goons) {
+            if (goon.x === player.x && goon.y === player.y) {
+                loseLife();
+                return true;
+            }
         }
+        return false;
     }
-    
+
     // ============================================================
-    //  WIN CONDITION
+    //  WIN CHECK
     // ============================================================
-    function checkWinCondition() {
-        const total = GRID_SIZE * GRID_SIZE;
+    function checkWin() {
         let captured = 0;
-        for (let y = 0; y < GRID_SIZE; y++) {
-            for (let x = 0; x < GRID_SIZE; x++) {
+        for (let y = 0; y < GRID; y++)
+            for (let x = 0; x < GRID; x++)
                 if (grid[y][x] === CAPTURED) captured++;
-            }
-        }
-        const percent = Math.round((captured / total) * 100);
-        
-        if (percent >= 80 && !levelComplete) {
-            levelComplete = true;
+        const pct = Math.round((captured / (GRID * GRID)) * 100);
+
+        if (pct >= 80 && !levelDone) {
+            levelDone = true;
             gameOver = true;
-            statusMsg.textContent = `✅ Level ${level} COMPLETE! 🦇`;
-            statusMsg.style.color = '#44ff88';
-            statusMsg.style.textShadow = '0 0 20px #44ff88';
-            
-            stopSnakeLoop();
-            if (gameLoopInterval) {
-                clearInterval(gameLoopInterval);
-                gameLoopInterval = null;
-            }
-            
+            statusEl.textContent = '✅ Level ' + level + ' COMPLETE! 🦇';
+            statusEl.style.color = '#44ff88';
+            statusEl.style.textShadow = '0 0 30px #44ff88';
+            stopLoops();
             setTimeout(() => {
-                startNextLevel();
+                if (!gameOver) nextLevel();
             }, 1500);
         }
+        updateUI();
     }
-    
+
     // ============================================================
     //  GOON AI
     // ============================================================
     function moveGoons() {
-        if (gameOver || levelComplete) return;
-        
+        if (gameOver || levelDone || !gameLoopActive) return;
+
         const dirs = [[0,1],[0,-1],[1,0],[-1,0]];
-        
         for (const goon of goons) {
             const shuffled = [...dirs];
             for (let i = shuffled.length - 1; i > 0; i--) {
                 const j = Math.floor(Math.random() * (i + 1));
                 [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
             }
-            
             let moved = false;
             for (const [dx, dy] of shuffled) {
                 const nx = goon.x + dx;
                 const ny = goon.y + dy;
-                
-                if (nx >= 0 && nx < GRID_SIZE && ny >= 0 && ny < GRID_SIZE) {
+                if (nx >= 0 && nx < GRID && ny >= 0 && ny < GRID) {
                     if (grid[ny][nx] !== WALL && grid[ny][nx] !== CAPTURED && grid[ny][nx] !== GOON) {
                         grid[goon.y][goon.x] = EMPTY;
                         goon.x = nx;
@@ -562,20 +455,14 @@
                 }
             }
         }
-        
+
         // Check collision with player
-        for (const goon of goons) {
-            if (goon.x === playerX && goon.y === playerY) {
-                loseLife();
-                return;
-            }
-        }
-        
+        checkGoonCollision();
         draw();
     }
-    
+
     // ============================================================
-    //  LIVES SYSTEM
+    //  LIVES
     // ============================================================
     function loseLife() {
         lives--;
@@ -583,275 +470,261 @@
         
         if (lives <= 0) {
             gameOver = true;
-            statusMsg.textContent = '💀 GAME OVER - Joker Wins! 💀';
-            statusMsg.style.color = '#ff0000';
-            statusMsg.style.textShadow = '0 0 30px #ff0000';
-            stopSnakeLoop();
-            if (gameLoopInterval) {
-                clearInterval(gameLoopInterval);
-                gameLoopInterval = null;
-            }
+            statusEl.textContent = '💀 GAME OVER - Joker Wins! 💀';
+            statusEl.style.color = '#ff0000';
+            statusEl.style.textShadow = '0 0 30px #ff0000';
+            stopLoops();
             draw();
+            restartBtn.textContent = '🔄 Play Again';
             return;
         }
-        
-        statusMsg.textContent = `💔 Lost a life! ${lives} remaining`;
-        statusMsg.style.color = '#ff6644';
-        statusMsg.style.textShadow = '0 0 20px #ff6644';
-        
+
+        statusEl.textContent = '💔 Lost a life! ' + lives + ' remaining';
+        statusEl.style.color = '#ff6644';
+        statusEl.style.textShadow = '0 0 20px #ff6644';
+
         // Reset player position
-        playerX = 10;
-        playerY = 10;
-        prevX = 10;
-        prevY = 10;
-        direction = { dx: 0, dy: 0 };
+        player.x = 10;
+        player.y = 10;
+        prev.x = 10;
+        prev.y = 10;
+        dir = { dx: 0, dy: 0 };
         moveQueue = [];
-        grid[playerY][playerX] = CAPTURED;
         
-        // Reset goons
-        for (const goon of goons) {
-            grid[goon.y][goon.x] = EMPTY;
+        // Clear goons from grid
+        for (const g of goons) {
+            if (g.x >= 0 && g.x < GRID && g.y >= 0 && g.y < GRID) {
+                grid[g.y][g.x] = EMPTY;
+            }
         }
-        spawnGoons(goonCount);
         
-        updateDisplay();
+        // Respawn goons
+        spawnGoons(goonCount);
+        grid[player.y][player.x] = CAPTURED;
+
+        updateUI();
         draw();
         
-        if (!gameOver && !levelComplete) {
-            startSnakeLoop();
+        // Restart loops if game is still active
+        if (!gameOver && !levelDone) {
+            startLoops();
         }
     }
-    
+
     // ============================================================
     //  LEVEL MANAGEMENT
     // ============================================================
     function initGame() {
+        // Reset everything
         level = 1;
+        lives = 3;
         gameOver = false;
-        levelComplete = false;
-        playerX = 10;
-        playerY = 10;
-        prevX = 10;
-        prevY = 10;
-        lives = maxLives;
-        direction = { dx: 0, dy: 0 };
+        levelDone = false;
+        player.x = 10;
+        player.y = 10;
+        prev.x = 10;
+        prev.y = 10;
+        dir = { dx: 0, dy: 0 };
         moveQueue = [];
-        gameSpeed = 100;
-        
-        stopSnakeLoop();
-        if (gameLoopInterval) {
-            clearInterval(gameLoopInterval);
-            gameLoopInterval = null;
-        }
-        
-        const config = getLevelConfig(level);
+        gameLoopActive = true;
+        restartBtn.textContent = '🔄 New Game';
+
+        stopLoops();
+        const config = getConfig(level);
         goonCount = config.goons;
         goonSpeed = config.speed;
-        
-        grid = createGrid();
-        grid[playerY][playerX] = CAPTURED;
-        
+
+        grid = makeGrid();
+        grid[player.y][player.x] = CAPTURED;
         spawnGoons(goonCount);
-        
-        statusMsg.textContent = '⬆️⬇️⬅️➡️ Draw walls to trap the Joker Goons!';
-        statusMsg.style.color = '#ffdd44';
-        statusMsg.style.textShadow = '0 0 20px #ffdd44';
-        
-        updateDisplay();
+
+        statusEl.textContent = '⬆️⬇️⬅️➡️ Draw walls & trap the Joker Goons!';
+        statusEl.style.color = '#ffdd44';
+        statusEl.style.textShadow = '0 0 15px #ffdd44';
+        updateUI();
         draw();
-        startSnakeLoop();
-        startGoonLoop();
+        startLoops();
     }
-    
-    function startNextLevel() {
+
+    function nextLevel() {
         if (level >= MAX_LEVELS) {
-            statusMsg.textContent = '🏆 YOU BEAT ALL 60 LEVELS! BATMAN WINS! 🏆';
-            statusMsg.style.color = '#ffdd44';
-            statusMsg.style.textShadow = '0 0 30px #ffdd44';
+            statusEl.textContent = '🏆 YOU BEAT ALL 60 LEVELS! BATMAN WINS! 🏆';
+            statusEl.style.color = '#ffdd44';
+            statusEl.style.textShadow = '0 0 30px #ffdd44';
             gameOver = true;
-            levelComplete = false;
-            stopSnakeLoop();
-            if (gameLoopInterval) {
-                clearInterval(gameLoopInterval);
-                gameLoopInterval = null;
-            }
+            levelDone = false;
+            gameLoopActive = false;
+            stopLoops();
             draw();
+            restartBtn.textContent = '🔄 Play Again';
             return;
         }
-        
+
         level++;
         gameOver = false;
-        levelComplete = false;
-        playerX = 10;
-        playerY = 10;
-        prevX = 10;
-        prevY = 10;
-        lives = maxLives;
-        direction = { dx: 0, dy: 0 };
+        levelDone = false;
+        lives = 3;
+        player.x = 10;
+        player.y = 10;
+        prev.x = 10;
+        prev.y = 10;
+        dir = { dx: 0, dy: 0 };
         moveQueue = [];
-        
-        const config = getLevelConfig(level);
+        gameLoopActive = true;
+        restartBtn.textContent = '🔄 New Game';
+
+        const config = getConfig(level);
         goonCount = config.goons;
         goonSpeed = config.speed;
-        
-        grid = createGrid();
-        grid[playerY][playerX] = CAPTURED;
-        
+
+        grid = makeGrid();
+        grid[player.y][player.x] = CAPTURED;
         spawnGoons(goonCount);
-        
-        statusMsg.textContent = `🦇 Level ${level} - ${goonCount} Joker Goons!`;
-        statusMsg.style.color = '#ffdd44';
-        statusMsg.style.textShadow = '0 0 20px #ffdd44';
-        
-        updateDisplay();
+
+        statusEl.textContent = '🦇 Level ' + level + ' - ' + goonCount + ' Joker Goons!';
+        statusEl.style.color = '#ffdd44';
+        statusEl.style.textShadow = '0 0 20px #ffdd44';
+        updateUI();
         draw();
-        
-        stopSnakeLoop();
-        if (gameLoopInterval) {
-            clearInterval(gameLoopInterval);
-            gameLoopInterval = null;
+        startLoops();
+    }
+
+    function jumpLevel() {
+        if (gameOver) {
+            // Allow jump even when game over
+            gameOver = false;
+            levelDone = false;
+            gameLoopActive = true;
         }
-        startSnakeLoop();
-        startGoonLoop();
-    }
-    
-    function startGoonLoop() {
-        if (gameLoopInterval) clearInterval(gameLoopInterval);
-        gameLoopInterval = setInterval(() => {
-            if (!gameOver && !levelComplete) {
-                moveGoons();
-            }
-        }, goonSpeed);
-    }
-    
-    function jumpToLevel() {
-        const target = prompt(`Jump to which level? (1-${MAX_LEVELS})`, '1');
+        const target = prompt('Jump to which level? (1-' + MAX_LEVELS + ')', '1');
         if (target) {
             const num = parseInt(target);
             if (num >= 1 && num <= MAX_LEVELS) {
                 level = num - 1;
-                lives = maxLives;
-                stopSnakeLoop();
-                if (gameLoopInterval) {
-                    clearInterval(gameLoopInterval);
-                    gameLoopInterval = null;
-                }
-                startNextLevel();
+                lives = 3;
+                stopLoops();
+                restartBtn.textContent = '🔄 New Game';
+                gameLoopActive = true;
+                gameOver = false;
+                levelDone = false;
+                nextLevel();
             } else {
-                alert(`Please enter a number between 1 and ${MAX_LEVELS}`);
+                alert('Enter a number between 1 and ' + MAX_LEVELS);
             }
         }
     }
-    
+
     // ============================================================
-    //  UI UPDATE
+    //  LOOPS
     // ============================================================
-    function updateDisplay() {
+    function startLoops() {
+        stopLoops();
+        gameLoopActive = true;
+        moveInterval = setInterval(movePlayer, 100);
+        goonInterval = setInterval(moveGoons, goonSpeed);
+    }
+
+    function stopLoops() {
+        gameLoopActive = false;
+        if (moveInterval) clearInterval(moveInterval);
+        if (goonInterval) clearInterval(goonInterval);
+        moveInterval = null;
+        goonInterval = null;
+    }
+
+    // ============================================================
+    //  UI
+    // ============================================================
+    function updateUI() {
         levelDisplay.textContent = level;
-        goonCountDisplay.textContent = goonCount;
-        speedDisplay.textContent = goonSpeed;
         livesDisplay.textContent = lives;
-        
+        goonDisplay.textContent = goonCount;
+
         let captured = 0;
-        for (let y = 0; y < GRID_SIZE; y++) {
-            for (let x = 0; x < GRID_SIZE; x++) {
+        for (let y = 0; y < GRID; y++)
+            for (let x = 0; x < GRID; x++)
                 if (grid[y][x] === CAPTURED) captured++;
-            }
-        }
-        const total = GRID_SIZE * GRID_SIZE;
-        const percent = Math.round((captured / total) * 100);
-        percentDisplay.textContent = Math.min(percent, 80);
-        
-        if (percent >= 80) {
-            percentDisplay.style.color = '#44ff88';
-        } else {
-            percentDisplay.style.color = '#ffdd44';
-        }
+        const pct = Math.round((captured / (GRID * GRID)) * 100);
+        percentDisplay.textContent = Math.min(pct, 80);
+        percentDisplay.style.color = pct >= 80 ? '#44ff88' : '#ffdd44';
     }
-    
+
     // ============================================================
-    //  DRAWING
+    //  DRAW
     // ============================================================
     function draw() {
         ctx.clearRect(0, 0, 600, 600);
-        
-        for (let y = 0; y < GRID_SIZE; y++) {
-            for (let x = 0; x < GRID_SIZE; x++) {
-                const px = x * CELL_SIZE;
-                const py = y * CELL_SIZE;
+
+        // Grid
+        for (let y = 0; y < GRID; y++) {
+            for (let x = 0; x < GRID; x++) {
+                const px = x * CELL, py = y * CELL;
                 const state = grid[y][x];
-                
-                if (state === EMPTY) {
-                    ctx.fillStyle = '#1a1a2e';
-                } else if (state === WALL) {
-                    ctx.fillStyle = '#4a4a7a';
-                } else if (state === CAPTURED) {
-                    ctx.fillStyle = '#2a2a5a';
-                } else if (state === GOON) {
-                    ctx.fillStyle = '#6b0020';
-                }
-                
-                ctx.fillRect(px, py, CELL_SIZE - 1, CELL_SIZE - 1);
+                ctx.fillStyle = state === EMPTY ? '#1a1a2e' :
+                                state === WALL ? '#4a4a7a' :
+                                state === CAPTURED ? '#2a2a5a' :
+                                '#6b0020';
+                ctx.fillRect(px, py, CELL - 1, CELL - 1);
                 ctx.strokeStyle = '#333355';
                 ctx.lineWidth = 0.5;
-                ctx.strokeRect(px, py, CELL_SIZE, CELL_SIZE);
+                ctx.strokeRect(px, py, CELL, CELL);
             }
         }
-        
-        // Draw Batman (player)
-        const bx = playerX * CELL_SIZE + CELL_SIZE / 2;
-        const by = playerY * CELL_SIZE + CELL_SIZE / 2;
-        const radius = CELL_SIZE / 2 - 3;
-        
-        const gradient = ctx.createRadialGradient(bx, by, 0, bx, by, radius + 10);
-        gradient.addColorStop(0, 'rgba(240, 192, 64, 0.6)');
-        gradient.addColorStop(1, 'rgba(240, 192, 64, 0)');
-        ctx.fillStyle = gradient;
+
+        // Batman
+        const bx = player.x * CELL + CELL / 2;
+        const by = player.y * CELL + CELL / 2;
+        const r = CELL / 2 - 3;
+
+        const grad = ctx.createRadialGradient(bx, by, 0, bx, by, r + 10);
+        grad.addColorStop(0, 'rgba(240, 192, 64, 0.6)');
+        grad.addColorStop(1, 'rgba(240, 192, 64, 0)');
+        ctx.fillStyle = grad;
         ctx.beginPath();
-        ctx.arc(bx, by, radius + 10, 0, Math.PI * 2);
+        ctx.arc(bx, by, r + 10, 0, Math.PI * 2);
         ctx.fill();
-        
+
         ctx.beginPath();
-        ctx.arc(bx, by, radius, 0, Math.PI * 2);
+        ctx.arc(bx, by, r, 0, Math.PI * 2);
         ctx.fillStyle = '#f0c040';
         ctx.shadowColor = '#f0c040';
         ctx.shadowBlur = 25;
         ctx.fill();
         ctx.shadowBlur = 0;
         ctx.fillStyle = '#0a0a0a';
-        ctx.font = `${CELL_SIZE - 4}px Arial`;
+        ctx.font = (CELL - 4) + 'px Arial';
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
         ctx.fillText('🦇', bx, by + 1);
-        
-        // Draw Joker Goons
+
+        // Goons
         for (const goon of goons) {
-            const gx = goon.x * CELL_SIZE + CELL_SIZE / 2;
-            const gy = goon.y * CELL_SIZE + CELL_SIZE / 2;
-            
-            const gGrad = ctx.createRadialGradient(gx, gy, 0, gx, gy, radius + 8);
-            gGrad.addColorStop(0, 'rgba(139, 0, 139, 0.5)');
-            gGrad.addColorStop(1, 'rgba(139, 0, 139, 0)');
-            ctx.fillStyle = gGrad;
+            const gx = goon.x * CELL + CELL / 2;
+            const gy = goon.y * CELL + CELL / 2;
+
+            const ggrad = ctx.createRadialGradient(gx, gy, 0, gx, gy, r + 8);
+            ggrad.addColorStop(0, 'rgba(139, 0, 139, 0.5)');
+            ggrad.addColorStop(1, 'rgba(139, 0, 139, 0)');
+            ctx.fillStyle = ggrad;
             ctx.beginPath();
-            ctx.arc(gx, gy, radius + 8, 0, Math.PI * 2);
+            ctx.arc(gx, gy, r + 8, 0, Math.PI * 2);
             ctx.fill();
-            
+
             ctx.beginPath();
-            ctx.arc(gx, gy, radius, 0, Math.PI * 2);
+            ctx.arc(gx, gy, r, 0, Math.PI * 2);
             ctx.fillStyle = '#8b008b';
             ctx.shadowColor = '#ff00ff';
             ctx.shadowBlur = 15;
             ctx.fill();
             ctx.shadowBlur = 0;
             ctx.fillStyle = '#ffffff';
-            ctx.font = `${CELL_SIZE - 4}px Arial`;
+            ctx.font = (CELL - 4) + 'px Arial';
             ctx.textAlign = 'center';
             ctx.textBaseline = 'middle';
             ctx.fillText('🎭', gx, gy + 1);
         }
     }
-    
+
     // ============================================================
     //  CONTROLS
     // ============================================================
@@ -860,40 +733,27 @@
         if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(key)) {
             e.preventDefault();
         }
-        
-        let newDir = null;
-        if (key === 'ArrowUp') newDir = { dx: 0, dy: -1 };
-        else if (key === 'ArrowDown') newDir = { dx: 0, dy: 1 };
-        else if (key === 'ArrowLeft') newDir = { dx: -1, dy: 0 };
-        else if (key === 'ArrowRight') newDir = { dx: 1, dy: 0 };
+        let nd = null;
+        if (key === 'ArrowUp') nd = { dx: 0, dy: -1 };
+        else if (key === 'ArrowDown') nd = { dx: 0, dy: 1 };
+        else if (key === 'ArrowLeft') nd = { dx: -1, dy: 0 };
+        else if (key === 'ArrowRight') nd = { dx: 1, dy: 0 };
         else if (key === 'r' || key === 'R') { initGame(); return; }
-        else return;
-        
-        if (newDir && moveQueue.length < 3) {
-            moveQueue.push(newDir);
-        }
+        if (nd && moveQueue.length < 3) moveQueue.push(nd);
     });
-    
-    document.querySelectorAll('.mobile-arrows button').forEach(btn => {
-        const handlePress = () => {
+
+    // Touch controls
+    document.querySelectorAll('#touchControls button').forEach(btn => {
+        const handler = () => {
             const dx = parseInt(btn.dataset.dx || '0');
             const dy = parseInt(btn.dataset.dy || '0');
             if (dx === 0 && dy === 0) return;
-            if (moveQueue.length < 3) {
-                moveQueue.push({ dx, dy });
-            }
+            if (moveQueue.length < 3) moveQueue.push({ dx, dy });
         };
-        
-        btn.addEventListener('click', handlePress);
-        btn.addEventListener('touchstart', (e) => {
-            e.preventDefault();
-            handlePress();
-        });
+        btn.addEventListener('click', handler);
+        btn.addEventListener('touchstart', (e) => { e.preventDefault(); handler(); });
     });
-    
-    document.getElementById('restartBtn').addEventListener('click', initGame);
-    document.getElementById('levelBtn').addEventListener('click', jumpToLevel);
-    
+
     // ============================================================
     //  START THE GAME!
     // ============================================================
