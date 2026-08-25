@@ -29,14 +29,55 @@
             width: 100%;
             position: relative;
         }
+        
+        /* HEADER WITH PAUSE BUTTON */
+        .header-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+            padding: 0 5px;
+            gap: 10px;
+        }
         .header {
             color: #f0c040;
-            font-size: 22px;
-            text-align: center;
-            margin-bottom: 10px;
+            font-size: 20px;
             text-shadow: 0 0 20px #f0c040;
             letter-spacing: 2px;
+            flex: 1;
+            text-align: center;
         }
+        .header-pause-btn {
+            background: rgba(255, 136, 0, 0.15);
+            border: 2px solid #ff8800;
+            color: #ff8800;
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            font-size: 20px;
+            cursor: pointer;
+            transition: 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: 'Arial Black', sans-serif;
+            flex-shrink: 0;
+            box-shadow: 0 0 20px rgba(255, 136, 0, 0.1);
+        }
+        .header-pause-btn:hover {
+            background: rgba(255, 136, 0, 0.35);
+            transform: scale(1.1);
+            box-shadow: 0 0 30px rgba(255, 136, 0, 0.3);
+        }
+        .header-pause-btn:active {
+            transform: scale(0.9);
+        }
+        .header-pause-btn.paused {
+            background: rgba(68, 255, 136, 0.2);
+            border-color: #44ff88;
+            color: #44ff88;
+        }
+        
         canvas {
             display: block;
             margin: 0 auto;
@@ -126,12 +167,9 @@
         .controls button.music-btn:hover {
             box-shadow: 0 0 30px rgba(139, 0, 139, 0.5);
         }
-        .controls button.pause-btn {
-            background: #ff8800;
-            color: white;
-        }
-        .controls button.pause-btn:hover {
-            box-shadow: 0 0 30px rgba(255, 136, 0, 0.5);
+        .controls button.music-btn.music-on {
+            background: #44ff88;
+            color: #0a0a0a;
         }
         .touch-controls {
             display: none;
@@ -255,7 +293,7 @@
             left: 0;
             right: 0;
             bottom: 0;
-            background: rgba(10, 10, 30, 0.92);
+            background: rgba(10, 10, 30, 0.93);
             border-radius: 20px;
             z-index: 150;
             flex-direction: column;
@@ -267,10 +305,10 @@
             display: flex;
         }
         #pauseOverlay .pause-icon {
-            font-size: 80px;
+            font-size: 70px;
             color: #f0c040;
             text-shadow: 0 0 40px #f0c040;
-            margin-bottom: 15px;
+            margin-bottom: 10px;
         }
         #pauseOverlay h2 {
             color: #f0c040;
@@ -280,20 +318,20 @@
         }
         #pauseOverlay .pause-buttons {
             display: flex;
-            gap: 15px;
+            gap: 12px;
             flex-wrap: wrap;
             justify-content: center;
         }
         #pauseOverlay .pause-btn {
-            padding: 14px 40px;
+            padding: 14px 35px;
             border-radius: 50px;
-            font-size: 18px;
+            font-size: 16px;
             font-weight: bold;
             cursor: pointer;
             transition: 0.3s;
             font-family: 'Arial Black', sans-serif;
             border: none;
-            min-width: 160px;
+            min-width: 150px;
         }
         #pauseOverlay .pause-btn.continue {
             background: #44ff88;
@@ -304,12 +342,24 @@
             box-shadow: 0 0 40px rgba(68, 255, 136, 0.5);
         }
         #pauseOverlay .pause-btn.menu {
-            background: #ff4444;
+            background: #ff8800;
             color: white;
         }
         #pauseOverlay .pause-btn.menu:hover {
             transform: scale(1.08);
-            box-shadow: 0 0 40px rgba(255, 68, 68, 0.5);
+            box-shadow: 0 0 40px rgba(255, 136, 0, 0.5);
+        }
+        #pauseOverlay .pause-btn.mute {
+            background: #8b008b;
+            color: white;
+        }
+        #pauseOverlay .pause-btn.mute:hover {
+            transform: scale(1.08);
+            box-shadow: 0 0 40px rgba(139, 0, 139, 0.5);
+        }
+        #pauseOverlay .pause-btn.mute.muted {
+            background: #44ff88;
+            color: #0a0a0a;
         }
         
         /* LEVEL SELECT MODAL */
@@ -409,12 +459,13 @@
             #mainMenu .title { font-size: 20px; }
             #mainMenu .menu-btn { padding: 12px 25px; font-size: 15px; min-width: 120px; }
             .info { font-size: 11px; }
-            .header { font-size: 16px; }
+            .header { font-size: 15px; }
             .touch-controls { display: grid; }
             #levelSelect .level-grid { grid-template-columns: repeat(5, 1fr); }
-            #pauseOverlay .pause-icon { font-size: 60px; }
-            #pauseOverlay h2 { font-size: 22px; }
-            #pauseOverlay .pause-btn { padding: 12px 25px; font-size: 15px; min-width: 120px; }
+            #pauseOverlay .pause-icon { font-size: 50px; }
+            #pauseOverlay h2 { font-size: 20px; }
+            #pauseOverlay .pause-btn { padding: 12px 20px; font-size: 14px; min-width: 100px; }
+            .header-pause-btn { width: 36px; height: 36px; font-size: 16px; }
         }
         @media (pointer: coarse) {
             .touch-controls { display: grid; }
@@ -438,7 +489,7 @@
             <button class="menu-btn secondary" onclick="showLevelSelect()">📋 LEVELS</button>
         </div>
         <div class="controls-info">
-            <span>⬆⬇⬅➡</span> Move Batman<br>
+            <span>⬆⬇⬅➡</span> Move Batman &nbsp;|&nbsp; <span>P</span> Pause<br>
             <span>Draw walls</span> to trap Joker Goons<br>
             Capture <span>80%</span> to win each level!<br>
             <span class="highlight-text">★ Corner Bonus:</span> Fill opposite corners to auto-fill the middle!<br>
@@ -460,11 +511,16 @@
         <h2>PAUSED</h2>
         <div class="pause-buttons">
             <button class="pause-btn continue" onclick="resumeGame()">▶ Continue</button>
-            <button class="pause-btn menu" onclick="returnToMenu()">🏠 Return to Menu</button>
+            <button class="pause-btn menu" onclick="returnToMenu()">🏠 Main Menu</button>
+            <button class="pause-btn mute" id="pauseMuteBtn" onclick="toggleMusicFromPause()">🔇 Mute Music</button>
         </div>
     </div>
 
-    <div class="header">🦇 BATXON: GOTHAM REALMS 🦇</div>
+    <!-- HEADER WITH PAUSE BUTTON -->
+    <div class="header-row">
+        <div class="header">🦇 BATXON: GOTHAM REALMS</div>
+        <button class="header-pause-btn" id="headerPauseBtn" onclick="togglePause()" title="Pause (P)">⏸️</button>
+    </div>
     
     <canvas id="gameCanvas" width="600" height="600"></canvas>
     
@@ -479,7 +535,6 @@
     
     <div class="controls">
         <button onclick="showLevelSelect()">📋 Levels</button>
-        <button class="pause-btn" onclick="togglePause()">⏸️ Pause</button>
         <button class="music-btn" id="musicBtn" onclick="toggleMusic()">🔇 Music Off</button>
     </div>
     
@@ -499,7 +554,7 @@
 <script>
     // ============================================================
     //  BATXON: GOTHAM REALMS - FINAL VERSION
-    //  Pause, Faster Gameplay, Level Select, Power-ups
+    //  Top Pause Button, Pause Menu with 3 options
     // ============================================================
 
     // --- Music System ---
@@ -560,18 +615,42 @@
         initAudio();
         musicPlaying = !musicPlaying;
         const btn = document.getElementById('musicBtn');
+        const pauseMuteBtn = document.getElementById('pauseMuteBtn');
         if (musicPlaying) {
             btn.textContent = '🔊 Music On';
-            btn.style.background = '#44ff88';
-            btn.style.color = '#0a0a0a';
+            btn.className = 'music-btn music-on';
+            pauseMuteBtn.textContent = '🔊 Unmute Music';
+            pauseMuteBtn.className = 'pause-btn mute muted';
             playBatmanTheme();
         } else {
             btn.textContent = '🔇 Music Off';
-            btn.style.background = '#8b008b';
-            btn.style.color = 'white';
+            btn.className = 'music-btn';
+            pauseMuteBtn.textContent = '🔇 Mute Music';
+            pauseMuteBtn.className = 'pause-btn mute';
             if (musicTimeout) {
                 clearTimeout(musicTimeout);
                 musicTimeout = null;
+            }
+        }
+        // Update pause menu mute button if visible
+        updatePauseMuteButton();
+    }
+
+    function toggleMusicFromPause() {
+        toggleMusic();
+        // If music is playing, show "Mute Music", else show "Unmute Music"
+        updatePauseMuteButton();
+    }
+
+    function updatePauseMuteButton() {
+        const pauseMuteBtn = document.getElementById('pauseMuteBtn');
+        if (pauseMuteBtn) {
+            if (musicPlaying) {
+                pauseMuteBtn.textContent = '🔊 Unmute Music';
+                pauseMuteBtn.className = 'pause-btn mute muted';
+            } else {
+                pauseMuteBtn.textContent = '🔇 Mute Music';
+                pauseMuteBtn.className = 'pause-btn mute';
             }
         }
     }
@@ -595,7 +674,7 @@
     let level = 1;
     let maxUnlockedLevel = 1;
     let goonCount = 3;
-    let goonSpeed = 200; // FASTER - was 500
+    let goonSpeed = 200;
     let lives = 3;
     let gameOver = false;
     let levelDone = false;
@@ -621,6 +700,7 @@
     const levelGrid = document.getElementById('levelGrid');
     const unlockCount = document.getElementById('unlockCount');
     const pauseOverlay = document.getElementById('pauseOverlay');
+    const headerPauseBtn = document.getElementById('headerPauseBtn');
 
     // ============================================================
     //  PAUSE SYSTEM
@@ -630,11 +710,14 @@
         isPaused = !isPaused;
         if (isPaused) {
             pauseOverlay.classList.add('active');
+            headerPauseBtn.textContent = '▶️';
+            headerPauseBtn.className = 'header-pause-btn paused';
             stopLoops();
-            document.querySelector('.pause-btn').textContent = '▶️ Resume';
+            updatePauseMuteButton();
         } else {
             pauseOverlay.classList.remove('active');
-            document.querySelector('.pause-btn').textContent = '⏸️ Pause';
+            headerPauseBtn.textContent = '⏸️';
+            headerPauseBtn.className = 'header-pause-btn';
             startLoops();
         }
     }
@@ -648,7 +731,8 @@
     function returnToMenu() {
         isPaused = false;
         pauseOverlay.classList.remove('active');
-        document.querySelector('.pause-btn').textContent = '⏸️ Pause';
+        headerPauseBtn.textContent = '⏸️';
+        headerPauseBtn.className = 'header-pause-btn';
         stopLoops();
         gameStarted = false;
         mainMenu.classList.remove('hidden');
@@ -664,7 +748,8 @@
         pauseOverlay.classList.remove('active');
         gameStarted = true;
         isPaused = false;
-        document.querySelector('.pause-btn').textContent = '⏸️ Pause';
+        headerPauseBtn.textContent = '⏸️';
+        headerPauseBtn.className = 'header-pause-btn';
         initGame();
         if (!musicPlaying) {
             toggleMusic();
@@ -714,12 +799,11 @@
     }
 
     // ============================================================
-    //  LEVEL CONFIG - FASTER GOONS
+    //  LEVEL CONFIG
     // ============================================================
     function getConfig(lvl) {
         const baseGoons = 3 + Math.floor(Math.random() * 3);
         const g = Math.min(baseGoons + Math.floor((lvl - 1) / 10), 8);
-        // Goons start at 200ms, get faster to 80ms
         const s = Math.max(80, 200 - (lvl - 1) * 2);
         return { goons: g, speed: s };
     }
@@ -972,7 +1056,7 @@
     }
 
     // ============================================================
-    //  PLAYER MOVEMENT - FASTER!
+    //  PLAYER MOVEMENT
     // ============================================================
     function movePlayer() {
         if (gameOver || levelDone || !gameLoopActive || !gameStarted || isPaused) return;
@@ -1060,7 +1144,7 @@
     }
 
     // ============================================================
-    //  GOON AI - FASTER!
+    //  GOON AI
     // ============================================================
     function moveGoons() {
         if (gameOver || levelDone || !gameLoopActive || !gameStarted || isPaused) return;
@@ -1163,6 +1247,8 @@
         maxUnlockedLevel = Math.max(maxUnlockedLevel, 1);
         isPaused = false;
         pauseOverlay.classList.remove('active');
+        headerPauseBtn.textContent = '⏸️';
+        headerPauseBtn.className = 'header-pause-btn';
 
         stopLoops();
         const config = getConfig(level);
@@ -1190,7 +1276,8 @@
         if (isPaused) {
             isPaused = false;
             pauseOverlay.classList.remove('active');
-            document.querySelector('.pause-btn').textContent = '⏸️ Pause';
+            headerPauseBtn.textContent = '⏸️';
+            headerPauseBtn.className = 'header-pause-btn';
         }
         stopLoops();
         gameOver = false;
@@ -1254,6 +1341,8 @@
         powerupActive = false;
         isPaused = false;
         pauseOverlay.classList.remove('active');
+        headerPauseBtn.textContent = '⏸️';
+        headerPauseBtn.className = 'header-pause-btn';
 
         const config = getConfig(level);
         goonCount = config.goons;
@@ -1287,6 +1376,8 @@
         powerupActive = false;
         isPaused = false;
         pauseOverlay.classList.remove('active');
+        headerPauseBtn.textContent = '⏸️';
+        headerPauseBtn.className = 'header-pause-btn';
         if (!gameStarted) {
             startGame();
         } else {
@@ -1296,12 +1387,12 @@
     }
 
     // ============================================================
-    //  LOOPS - FASTER PLAYER (50ms instead of 100ms)
+    //  LOOPS
     // ============================================================
     function startLoops() {
         stopLoops();
         gameLoopActive = true;
-        moveInterval = setInterval(movePlayer, 50); // FASTER - was 100
+        moveInterval = setInterval(movePlayer, 50);
         goonInterval = setInterval(moveGoons, goonSpeed);
     }
 
@@ -1428,6 +1519,16 @@
     document.addEventListener('keydown', (e) => {
         if (!gameStarted) return;
         const key = e.key;
+        
+        // Pause with P or ESC
+        if (key === 'p' || key === 'P' || key === 'Escape') {
+            e.preventDefault();
+            if (!gameOver && !levelDone) {
+                togglePause();
+            }
+            return;
+        }
+        
         if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(key)) {
             e.preventDefault();
         }
@@ -1437,12 +1538,6 @@
         else if (key === 'ArrowLeft') nd = { dx: -1, dy: 0 };
         else if (key === 'ArrowRight') nd = { dx: 1, dy: 0 };
         else if (key === 'r' || key === 'R') { resetGame(); return; }
-        else if (key === 'p' || key === 'P') { togglePause(); return; }
-        else if (key === 'Escape') { 
-            if (isPaused) { resumeGame(); } 
-            else if (!gameOver && !levelDone) { togglePause(); }
-            return;
-        }
         if (nd && moveQueue.length < 5) moveQueue.push(nd);
     });
 
@@ -1461,15 +1556,6 @@
     document.getElementById('restartBtn').addEventListener('click', resetGame);
     document.querySelector('.controls button:first-child').onclick = showLevelSelect;
 
-    // Keyboard shortcut for pause
-    document.addEventListener('keydown', (e) => {
-        if (e.key === 'p' || e.key === 'P' || e.key === 'Escape') {
-            if (gameStarted && !gameOver && !levelDone) {
-                // handled above
-            }
-        }
-    });
-
     // ============================================================
     //  SHOW MENU ON LOAD
     // ============================================================
@@ -1480,3 +1566,4 @@
 </script>
 </body>
 </html>
+        
